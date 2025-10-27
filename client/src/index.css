@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+@theme {
+  --color-slack-purple: #4A154B;
+  --color-slack-green: #007A5A;
+  --color-slack-blue: #1264A3;
+  --color-slack-red: #E01E5A;
+  --color-slack-orange: #ECB22E;
+
+  --font-family-slack: "Lato", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+/* h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+} */
+
+.loginBtn {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+.loginBtn:hover {
+  border-color: #646cff;
+}
+.loginBtn:focus,
+.loginBtn:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media print {
+  @page {
+    margin: 0; /* removes browser default margins */
+  }
+  body {
+    -webkit-print-color-adjust: exact; /* keeps colors */
+    print-color-adjust: exact;
+  }
+}
