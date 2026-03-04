@@ -13,7 +13,6 @@ import {
   Package,
 } from "lucide-react";
 import { UserContext } from "../context/userContext";
-// import { Toaster } from 'react-hot-toast';
 
 const Layout = () => {
   const location = useLocation();
@@ -35,7 +34,7 @@ const Layout = () => {
   const businessName =
     currentUser?.businessName ||
     currentUser?.name ||
-    "Business"; // fallback
+    "Business";
   const firstLetter = businessName?.charAt(0)?.toUpperCase() || "B";
 
   return (
@@ -89,7 +88,7 @@ const Layout = () => {
                       ? "bg-blue-100 text-blue-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
-                  style={{ padding: "8px" }}
+                  style={{ padding: "12px 8px" }}
                 >
                   <Icon
                     className={`h-5 w-5 ${
@@ -114,7 +113,7 @@ const Layout = () => {
           <Link
             to="/invoices/create"
             className="w-full flex items-center justify-center border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            style={{ padding: "8px 16px" }}
+            style={{ padding: "12px 16px" }}
           >
             <Plus className="h-4 w-4" style={{ marginRight: "8px" }} />
             New Invoice
@@ -126,7 +125,7 @@ const Layout = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <div
-          className="bg-white shadow-sm border-b border-gray-200 lg:px-6"
+          className="bg-white shadow-sm border-b border-gray-200"
           style={{ padding: "12px 16px" }}
         >
           <div className="flex items-center justify-between">
@@ -137,7 +136,13 @@ const Layout = () => {
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className="flex-1 lg:flex lg:items-center lg:justify-between items-center">
+            
+            {/* Mobile Title - Hidden on desktop */}
+            <h1 className="lg:hidden text-lg font-bold text-gray-900">
+              Billing Software
+            </h1>
+            
+            <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-between">
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold text-gray-900">
                   Multi-Domain Billing System
@@ -145,11 +150,11 @@ const Layout = () => {
               </div>
 
               {/* Profile Section */}
-              <div className="relative" style={{marginLeft: '16px', marginRight: '20px'}}>
+              <div className="relative" style={{marginLeft: '16px'}}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 cursor-pointer"
-                  title={businessName} // tooltip on hover
+                  title={businessName}
                 >
                   {firstLetter}
                 </button>
@@ -161,14 +166,14 @@ const Layout = () => {
                       to="/profile"
                       className="flex items-center text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={() => setProfileOpen(false)}
-                      style={{padding: '8px 16px'}}
+                      style={{padding: '12px 16px'}}
                     >
                       <User className="h-4 w-4" style={{marginRight: '8px'}}/> Profile Settings
                     </Link>
                     <Link
                       to="/logout"
                       className="flex items-center text-gray-700 hover:bg-gray-100 transition-colors"
-                      style={{padding: '8px 16px'}}
+                      style={{padding: '12px 16px'}}
                     >
                       <LogOut className="h-4 w-4" style={{marginRight: '8px'}}/> Logout
                     </Link>
@@ -176,19 +181,47 @@ const Layout = () => {
                 )}
               </div>
             </div>
+
+            {/* Mobile Profile */}
+            <div className="lg:hidden relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer"
+              >
+                {firstLetter}
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-60" style={{marginTop: '8px'}}>
+                  <Link
+                    to="/profile"
+                    className="flex items-center text-gray-700 hover:bg-gray-100 transition-colors"
+                    onClick={() => setProfileOpen(false)}
+                    style={{padding: '12px 16px'}}
+                  >
+                    <User className="h-4 w-4" style={{marginRight: '8px'}}/> Profile
+                  </Link>
+                  <Link
+                    to="/logout"
+                    className="flex items-center text-gray-700 hover:bg-gray-100 transition-colors"
+                    style={{padding: '12px 16px'}}
+                  >
+                    <LogOut className="h-4 w-4" style={{marginRight: '8px'}}/> Logout
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Page Content */}
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div style={{ paddingTop: "24px", paddingBottom: "24px" }}>
+          <div style={{ padding: "16px" }}>
             <div
-              className="max-w-7xl sm:px-6 lg:px-8"
+              className="max-w-7xl"
               style={{
                 marginLeft: "auto",
                 marginRight: "auto",
-                paddingLeft: "16px",
-                paddingRight: "16px",
               }}
             >
               <Outlet />

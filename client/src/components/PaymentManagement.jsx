@@ -56,12 +56,44 @@ const PaymentManagement = () => {
     }
   };
 
+  // Frontend validation function for ADD payment
+  const validateAddPaymentAmount = (amount) => {
+    if (!invoice) return false;
+    const remainingBalance = invoice.totalAmount - invoice.amountPaid;
+    return parseFloat(amount) <= remainingBalance;
+  };
+
+  // Frontend validation function for EDIT payment
+  const validateEditPaymentAmount = (amount) => {
+    if (!invoice || !editingPayment) return false;
+    // Subtract the original payment amount first, then add the new amount
+    const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
+    const remainingBalance = invoice.totalAmount - amountWithoutCurrentPayment;
+    return parseFloat(amount) <= remainingBalance;
+  };
+
   const handleAddPayment = async (e) => {
     e.preventDefault();
+    
+    // Convert amount to number before sending
+    const paymentPayload = {
+      ...paymentData,
+      amount: parseFloat(paymentData.amount) // Convert string to number
+    };
+
+    console.log("Sending payment data:", paymentPayload);
+    
+    // Frontend validation
+    if (!validateAddPaymentAmount(paymentData.amount)) {
+      const remainingBalance = invoice.totalAmount - invoice.amountPaid;
+      toast.error(`Payment would exceed total amount. Maximum allowed: ₹${remainingBalance.toFixed(2)}`);
+      return;
+    }
+
     try {
       await axios.post(
         `${import.meta.env.VITE_BASE_URL}/invoices/${id}/payments`,
-        paymentData
+        paymentPayload // Send the converted payload
       );
       
       toast.success("Payment added successfully");
@@ -75,16 +107,32 @@ const PaymentManagement = () => {
       });
       fetchInvoiceAndPayments();
     } catch (error) {
+      console.error("Payment error:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to add payment");
     }
   };
 
   const handleUpdatePayment = async (e) => {
     e.preventDefault();
+
+    // Convert amount to number before sending
+    const paymentPayload = {
+      ...paymentData,
+      amount: parseFloat(paymentData.amount) // Convert string to number
+    };
+
+    // Frontend validation for edit - use different calculation
+    if (!validateEditPaymentAmount(paymentData.amount)) {
+      const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
+      const remainingBalance = invoice.totalAmount - amountWithoutCurrentPayment;
+      toast.error(`Payment would exceed total amount. Maximum allowed: ₹${remainingBalance.toFixed(2)}`);
+      return;
+    }
+
     try {
       await axios.patch(
         `${import.meta.env.VITE_BASE_URL}/invoices/${id}/payments/${editingPayment._id}`,
-        paymentData
+        paymentPayload 
       );
       
       toast.success("Payment updated successfully");
@@ -98,6 +146,7 @@ const PaymentManagement = () => {
       });
       fetchInvoiceAndPayments();
     } catch (error) {
+      console.error("Update payment error:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to update payment");
     }
   };
@@ -120,7 +169,7 @@ const PaymentManagement = () => {
   const startEditPayment = (payment) => {
     setEditingPayment(payment);
     setPaymentData({
-      amount: payment.amountPaid,
+      amount: payment.amountPaid.toString(), 
       paymentMode: payment.paymentMode,
       paymentDate: format(new Date(payment.paymentDate), "yyyy-MM-dd"),
       notes: payment.notes || "",
@@ -138,6 +187,11 @@ const PaymentManagement = () => {
       notes: "",
       recordedBy: ""
     });
+  };
+
+  // Prevent wheel event on number input to stop accidental value changes
+  const handleWheel = (e) => {
+    e.target.blur();
   };
 
   if (loading) {
@@ -159,9 +213,21 @@ const PaymentManagement = () => {
     );
   }
 
+  // Calculate remaining balance for display - DIFFERENT FOR ADD VS EDIT
+  const getRemainingBalance = () => {
+    if (editingPayment) {
+      const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
+      return invoice.totalAmount - amountWithoutCurrentPayment;
+    } else {
+      return invoice.totalAmount - invoice.amountPaid;
+    }
+  };
+
+  const remainingBalance = getRemainingBalance();
+  const isAmountValid = paymentData.amount && parseFloat(paymentData.amount) <= remainingBalance;
+
   return (
     <div style={{ padding: "20px" }}>
-        {console.log(invoice)}
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
@@ -173,7 +239,7 @@ const PaymentManagement = () => {
               marginRight: "12px",
               borderRadius: "8px"
             }}
-            className="hover:bg-gray-100"
+            className="cursor-pointer hover:bg-gray-100"
           >
             <ArrowLeft style={{ width: "20px", height: "20px" }} />
           </button>
@@ -258,7 +324,7 @@ const PaymentManagement = () => {
             color: "white", 
             borderRadius: "8px"
           }}
-          className="hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cursor-pointer hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus style={{ width: "20px", height: "20px", marginRight: "8px" }} />
           Add Payment
@@ -292,6 +358,9 @@ const PaymentManagement = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700" style={{ marginBottom: "8px" }}>
                   Amount *
+                  <span className="ml-2 text-sm text-gray-500">
+                    (Max: ₹{remainingBalance.toFixed(2)})
+                  </span>
                 </label>
                 <input
                   type="number"
@@ -299,14 +368,24 @@ const PaymentManagement = () => {
                   required
                   value={paymentData.amount}
                   onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                  onWheel={handleWheel} // Prevent scroll wheel from changing value
                   style={{ 
                     width: "100%", 
                     padding: "8px 12px", 
-                    border: "1px solid #d1d5db",
+                    border: `1px solid ${
+                      paymentData.amount && !isAmountValid 
+                        ? '#ef4444' 
+                        : '#d1d5db'
+                    }`,
                     borderRadius: "8px"
                   }}
                   placeholder="Enter amount"
                 />
+                {paymentData.amount && !isAmountValid && (
+                  <p className="text-red-600 text-sm mt-1">
+                    Amount exceeds remaining balance of ₹{remainingBalance.toFixed(2)}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -390,15 +469,17 @@ const PaymentManagement = () => {
             <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
               <button
                 type="submit"
+                disabled={!paymentData.amount || !isAmountValid}
                 style={{ 
                   display: "flex", 
                   alignItems: "center", 
                   padding: "8px 16px", 
                   backgroundColor: "#2563eb", 
                   color: "white", 
-                  borderRadius: "8px"
+                  borderRadius: "8px",
+                  opacity: (!paymentData.amount || !isAmountValid) ? 0.5 : 1
                 }}
-                className="hover:bg-blue-700"
+                className="cursor-pointer hover:bg-blue-700 disabled:cursor-not-allowed"
               >
                 <Save style={{ width: "16px", height: "16px", marginRight: "8px" }} />
                 {editingPayment ? "Update Payment" : "Add Payment"}
@@ -412,7 +493,7 @@ const PaymentManagement = () => {
                   color: "#374151",
                   borderRadius: "8px"
                 }}
-                className="hover:bg-gray-50"
+                className="cursor-pointer hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -475,14 +556,14 @@ const PaymentManagement = () => {
                     <button
                       onClick={() => startEditPayment(payment)}
                       style={{ padding: "4px", color: "#6b7280" }}
-                      className="hover:bg-gray-100 rounded"
+                      className="hover:bg-gray-100 rounded cursor-pointer"
                     >
                       <Edit style={{ width: "16px", height: "16px" }} />
                     </button>
                     <button
                       onClick={() => handleDeletePayment(payment._id)}
                       style={{ padding: "4px", color: "#6b7280" }}
-                      className="hover:bg-gray-100 rounded"
+                      className="hover:bg-gray-100 rounded cursor-pointer"
                     >
                       <Trash2 style={{ width: "16px", height: "16px" }} />
                     </button>

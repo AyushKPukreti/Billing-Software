@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { data, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Template1 from "../templates/Template1";
@@ -99,7 +99,7 @@ const InvoiceView = () => {
       words += " and " + inWords(parseInt(paise)) + " Paise";
     }
 
-    return words + " only";
+    return words + " Only";
   }
 
   useEffect(() => {
@@ -124,6 +124,7 @@ const InvoiceView = () => {
     const element = printRef.current;
     if (!element) return;
 
+    
     // Clone the node into a fixed-width container (desktop-like)
     const cloned = element.cloneNode(true);
     const wrapper = document.createElement("div");
@@ -165,44 +166,40 @@ const InvoiceView = () => {
     );
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     const element = printRef.current;
     if (!element) return;
 
-    // Clone invoice in a fixed desktop width container
-    const clone = element.cloneNode(true);
-    clone.style.width = "1000px";
-    clone.style.maxWidth = "1000px";
-    clone.style.margin = "0 auto";
-    clone.style.padding = "20px";
-
-    document.body.appendChild(clone);
-
-    const canvas = await html2canvas(clone, {
-      scale: 2,
-      useCORS: true,
-    });
-
-    document.body.removeChild(clone);
-
-    const imgData = canvas.toDataURL("image/png");
-
     const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+
+    const cssLinks = Array.from(
+      document.querySelectorAll("link[rel='stylesheet'], style")
+    )
+      .map((node) => node.outerHTML)
+      .join("");
 
     printWindow.document.write(`
-      <html>
-        <head>
-          <style>
-            body { margin: 0; text-align: center; }
-            img { width: 100%; max-width: 1000px; height: auto; }
-          </style>
-        </head>
-        <body>
-          <img src="${imgData}" />
-        </body>
-      </html>
-    `);
+    <html>
+      <head>
+        <title>Invoice Print</title>
+        ${cssLinks}  <!-- ✅ Copies Tailwind + Custom CSS -->
+        <style>
+          @page { size: A4; }
+          body { margin: 0; padding: 0; }
+          .print-container {
+            width: 1000px;
+            margin: 0 auto;
+            padding: 20px 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-container">
+          ${element.outerHTML}
+        </div>
+      </body>
+    </html>
+  `);
 
     printWindow.document.close();
 
@@ -279,6 +276,7 @@ const InvoiceView = () => {
 
   return (
     <div className="flex ">
+      {console.log(data)}
       {/* Main Invoice Area */}
       <div className="flex-1" style={{ padding: "1rem" }}>
         {/* Action Buttons */}

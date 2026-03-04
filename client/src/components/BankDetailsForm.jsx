@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,12 +14,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { UserContext } from "../context/userContext";
 
 axios.defaults.withCredentials = true;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const BankDetailsForm = () => {
   const navigate = useNavigate();
+  const { setCurrentUser } = useContext(UserContext);
 
   const [formData, setFormData] = useState({
     accountHolderName: "",
@@ -147,6 +149,12 @@ const BankDetailsForm = () => {
         toast.success("Bank details saved successfully!");
       }
 
+      // Update localStorage and context with the new bank details
+      setCurrentUser((prevUser) => ({
+        ...prevUser,
+        bankDetails: payload,
+      }));
+
       navigate("/profile");
     } catch (err) {
       const message =
@@ -166,6 +174,10 @@ const BankDetailsForm = () => {
     try {
       setLoading(true);
       await axios.delete(`${BASE_URL}/users/bank-details`);
+
+      // Update localStorage and context to remove bank details
+      updateUserInLocalStorage(null);
+
       toast.success("Bank details deleted successfully!");
       navigate("/profile");
     } catch (err) {
@@ -740,7 +752,7 @@ const BankDetailsForm = () => {
               <li>
                 • All information is stored securely and only visible to you
               </li>
-              <li>• You can update or remove this information anytime</li>
+              <li>• You can update this information anytime</li>
               <li>• UPI ID is optional but recommended for faster payments</li>
             </ul>
           </div>

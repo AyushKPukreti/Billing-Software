@@ -11,6 +11,7 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
+  Plus,
 } from "lucide-react";
 import axios from "axios";
 import { UserContext } from "../context/userContext";
@@ -221,33 +222,34 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ padding: "20px" }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between" style={{ marginBottom: "24px" }}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: "24px" }}>
         <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-base text-gray-600" style={{ marginTop: "4px" }}>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-sm sm:text-base text-gray-600" style={{ marginTop: "4px" }}>
             Welcome to your billing dashboard
           </p>
         </div>
         <div className="flex" style={{ marginTop: "16px" }}>
           <Link
             to="/invoices/create"
-            className="inline-flex items-center border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            style={{ padding: "10px 20px" }}
+            className="inline-flex items-center border border-transparent rounded-lg shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            style={{ padding: "10px 16px" }}
           >
-            <FileText className="h-5 w-5" style={{ marginRight: "8px" }} />
-            Create Invoice
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" style={{ marginRight: "8px" }} />
+            <span className="hidden sm:inline">Create Invoice</span>
+            <span className="sm:hidden">New Invoice</span>
           </Link>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div
-        className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4"
         style={{ marginBottom: "24px" }}
       >
-        {statCards.map((card, index) => {
+        {statCards.slice(0, 4).map((card, index) => {
           const Icon = card.icon;
           return (
             <Link
@@ -255,25 +257,62 @@ const Dashboard = () => {
               to={card.link}
               className="relative bg-white shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
               style={{
-                paddingTop: "20px",
-                paddingBottom: "20px",
-                paddingLeft: "16px",
-                paddingRight: "16px",
+                paddingTop: "16px",
+                paddingBottom: "16px",
+                paddingLeft: "12px",
+                paddingRight: "12px",
               }}
             >
               <div className="flex items-center">
-                <div className={`rounded-lg ${card.color}`} style={{ padding: "12px" }}>
-                  <Icon className="h-6 w-6 text-white" />
+                <div className={`rounded-lg ${card.color}`} style={{ padding: "10px" }}>
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <div style={{ marginLeft: "16px", flex: "1" }}>
-                  <p className="text-sm font-medium text-gray-600">
+                <div style={{ marginLeft: "12px", flex: "1" }}>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     {card.title}
                   </p>
-                  <p className="text-xl font-bold text-gray-900" style={{ marginTop: "4px" }}>
+                  <p className="text-lg sm:text-xl font-bold text-gray-900" style={{ marginTop: "2px" }}>
                     {card.value}
                   </p>
-                  <p className="text-sm text-gray-500" style={{ marginTop: "4px" }}>
+                  <p className="text-xs text-gray-500" style={{ marginTop: "2px" }}>
                     {card.description}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Additional Stats Grid for smaller screens */}
+      <div
+        className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        style={{ marginBottom: "24px" }}
+      >
+        {statCards.slice(4).map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <Link
+              key={index}
+              to={card.link}
+              className="relative bg-white shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+              style={{
+                paddingTop: "12px",
+                paddingBottom: "12px",
+                paddingLeft: "10px",
+                paddingRight: "10px",
+              }}
+            >
+              <div className="flex items-center">
+                <div className={`rounded-lg ${card.color}`} style={{ padding: "8px" }}>
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                </div>
+                <div style={{ marginLeft: "10px", flex: "1" }}>
+                  <p className="text-xs font-medium text-gray-600 truncate">
+                    {card.title}
+                  </p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900" style={{ marginTop: "2px" }}>
+                    {card.value}
                   </p>
                 </div>
               </div>
@@ -284,15 +323,15 @@ const Dashboard = () => {
 
       {/* Unified Chart Section */}
       <div className="bg-white shadow rounded-lg border border-gray-200" style={{ marginBottom: "24px" }}>
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: "16px" }}>
           <UnifiedChart data={invoiceData} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: "24px" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: "16px" }}>
         {/* Recent Invoices */}
         <div className="lg:col-span-2 bg-white shadow rounded-lg border border-gray-200">
-          <div style={{ padding: "20px" }}>
+          <div style={{ padding: "16px" }}>
             <h3 className="text-lg font-semibold text-gray-900" style={{ marginBottom: "16px" }}>
               Recent Activity
             </h3>
@@ -304,11 +343,11 @@ const Dashboard = () => {
                     <div
                       key={invoice._id}
                       className="flex items-center justify-between rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                      style={{ padding: "16px" }}
+                      style={{ padding: "12px" }}
                     >
-                      <div className="flex items-center" style={{ gap: "16px", flex: "1" }}>
+                      <div className="flex items-center" style={{ gap: "12px", flex: "1", minWidth: "0" }}>
                         <div className="flex-shrink-0">
-                          <StatusIcon className={`h-8 w-8 ${
+                          <StatusIcon className={`h-6 w-6 sm:h-8 sm:w-8 ${
                             invoice.status === "paid" ? "text-green-500" :
                             invoice.status === "partial" ? "text-orange-500" :
                             invoice.status === "overdue" ? "text-red-500" :
@@ -316,38 +355,38 @@ const Dashboard = () => {
                           }`} />
                         </div>
                         <div style={{ flex: "1", minWidth: "0" }}>
-                          <p className="text-base font-medium text-gray-900 truncate">
+                          <p className="text-sm sm:text-base font-medium text-gray-900 truncate">
                             {invoice.invoiceNumber}
                           </p>
-                          <p className="text-sm text-gray-600 truncate">
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">
                             {invoice.client?.companyName || "Unknown Client"}
                           </p>
                           {invoice.status === "partial" && (
-                            <p className="text-sm text-orange-600" style={{ marginTop: "4px" }}>
+                            <p className="text-xs text-orange-600" style={{ marginTop: "2px" }}>
                               Paid: ₹{invoice.amountPaid?.toFixed(2)} / Due: ₹{invoice.amountDue?.toFixed(2)}
                             </p>
                           )}
                           {invoice.status === "sent" && (
-                            <p className="text-sm text-blue-600" style={{ marginTop: "4px" }}>
+                            <p className="text-xs text-blue-600" style={{ marginTop: "2px" }}>
                               Due: ₹{invoice.amountDue?.toFixed(2)}
                             </p>
                           )}
                           {invoice.status === "overdue" && (
-                            <p className="text-sm text-red-600" style={{ marginTop: "4px" }}>
+                            <p className="text-xs text-red-600" style={{ marginTop: "2px" }}>
                               Overdue: ₹{invoice.amountDue?.toFixed(2)}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="text-right" style={{ minWidth: "100px" }}>
-                        <p className="text-base font-semibold text-gray-900">
+                      <div className="text-right" style={{ minWidth: "80px" }}>
+                        <p className="text-sm sm:text-base font-semibold text-gray-900">
                           ₹{invoice.totalAmount.toFixed(2)}
                         </p>
                         <span
-                          className={`inline-flex items-center rounded-full text-sm font-medium border ${getStatusColor(
+                          className={`inline-flex items-center rounded-full text-xs font-medium border ${getStatusColor(
                             invoice.status
                           )}`}
-                          style={{ padding: "4px 10px", marginTop: "4px" }}
+                          style={{ padding: "2px 8px", marginTop: "4px" }}
                         >
                           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </span>
@@ -357,15 +396,15 @@ const Dashboard = () => {
                 })}
               </div>
             ) : (
-              <div className="text-center" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
-                <FileText className="h-12 w-12 text-gray-400" style={{ marginLeft: "auto", marginRight: "auto", marginBottom: "12px" }} />
-                <p className="text-gray-500 text-base">No recent activity</p>
+              <div className="text-center" style={{ paddingTop: "32px", paddingBottom: "32px" }}>
+                <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" style={{ marginLeft: "auto", marginRight: "auto", marginBottom: "8px" }} />
+                <p className="text-gray-500 text-sm sm:text-base">No recent activity</p>
               </div>
             )}
-            <div style={{ marginTop: "20px" }}>
+            <div style={{ marginTop: "16px" }}>
               <Link
                 to="/invoices"
-                className="w-full flex justify-center items-center border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                className="w-full flex justify-center items-center border border-gray-300 rounded-lg text-sm sm:text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                 style={{ padding: "10px 16px" }}
               >
                 View all invoices
@@ -376,7 +415,7 @@ const Dashboard = () => {
 
         {/* Business Type Cards */}
         <div className="bg-white shadow rounded-lg border border-gray-200">
-          <div style={{ padding: "20px" }}>
+          <div style={{ padding: "16px" }}>
             <h3 className="text-lg font-semibold text-gray-900" style={{ marginBottom: "16px" }}>
               Business Types
             </h3>
@@ -395,16 +434,16 @@ const Dashboard = () => {
                   <div
                     key={type}
                     className="flex items-center rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                    style={{ padding: "16px" }}
+                    style={{ padding: "12px" }}
                   >
                     <div className="flex-shrink-0">
-                      <Icon className="h-6 w-6 text-gray-500" />
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                     </div>
-                    <div style={{ marginLeft: "16px" }}>
-                      <h3 className="text-base font-medium text-gray-900">
+                    <div style={{ marginLeft: "12px" }}>
+                      <h3 className="text-sm sm:text-base font-medium text-gray-900">
                         {meta.name}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs sm:text-sm text-gray-600">
                         Specialized billing features
                       </p>
                     </div>

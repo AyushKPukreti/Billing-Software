@@ -1,6 +1,6 @@
 import { generateTokenAndSetCookie } from "../lib/utils/generateToken.js";
 import ClientModel from "../models/client.model.js";
-import UserModel from "../models/User.model.js";
+import UserModel from "../models/user.model.js";
 
 export const registerUser = async (req, res, next) => {
   try {
@@ -15,6 +15,7 @@ export const registerUser = async (req, res, next) => {
       preferredPrintFormat,
       address,
       taxId,
+      udyamNo,
       IsVerified,
     } = req.body;
 
@@ -62,6 +63,7 @@ export const registerUser = async (req, res, next) => {
       preferredPrintFormat,
       address,
       taxId,
+      udyamNo,
       IsVerified,
     });
 
@@ -137,6 +139,7 @@ export const editUserProfile = async (req, res) => {
       address,
       taxId,
       businessType,
+      udyamNo
     } = req.body;
 
     const user = await UserModel.findById(userId);
@@ -167,6 +170,7 @@ export const editUserProfile = async (req, res) => {
     if (name?.trim()) user.name = name.trim();
     if (businessName?.trim()) user.businessName = businessName.trim();
     if (taxId?.trim()) user.taxId = taxId.trim();
+    if (udyamNo?.trim()) user.udyamNo = udyamNo.trim();
 
     // === Phone Validation ===
     if (phone?.trim()) {

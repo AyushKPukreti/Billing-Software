@@ -24,13 +24,13 @@ const TemplateSidebar = ({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 300, opacity: 0 }}
           transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
-          className="fixed inset-y-0 right-0 z-50 lg:sticky lg:top-5 lg:h-full
+          className="fixed inset-y-0 right-0 z-50 lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] 
             bg-black/70 backdrop-blur-md border-l border-gray-700 flex flex-col shadow-xl
-            w-64 sm:w-68 md:w-70 lg:w-74 overflow-y-auto"
+            w-64 sm:w-68 md:w-70 lg:w-74"
         >
           {/* Header */}
           <div
-            className="border-b flex justify-between items-center"
+            className="border-b border-gray-600 flex-shrink-0 flex justify-between items-center bg-black/50"
             style={{ paddingLeft: "1rem", paddingRight: "1rem", paddingTop: "0.75rem", paddingBottom: "0.75rem" }}
           >
             <h3
@@ -58,44 +58,46 @@ const TemplateSidebar = ({
             </div>
           </div>
 
-          {/* Templates */}
-          <ul
-            className="flex flex-col"
-            style={{ padding: "1rem", gap: "0.75rem" }}
-          >
-            {templates.map((tpl) => (
-              <li
-                key={tpl.id}
-                className={`rounded cursor-pointer transition-all duration-200 relative ${
-                  selectedTemplate === tpl.id
-                    ? "border-2 border-blue-500 bg-blue-50"
-                    : "border border-gray-400 bg-white hover:shadow-md"
-                }`}
-                style={{ padding: "0.75rem" }}
-                onClick={() => setSelectedTemplate(tpl.id)}
-              >
-                <p
-                  className="text-sm md:text-base font-medium"
-                  style={{ marginBottom: "0.5rem" }}
+          {/* Templates - Scrollable Area */}
+          <div className="flex-1 overflow-y-auto">
+            <ul
+              className="flex flex-col"
+              style={{ padding: "1rem", gap: "0.75rem" }}
+            >
+              {templates.map((tpl) => (
+                <li
+                  key={tpl.id}
+                  className={`rounded cursor-pointer transition-all duration-200 relative ${
+                    selectedTemplate === tpl.id
+                      ? "border-2 border-blue-500 bg-blue-50"
+                      : "border border-gray-400 bg-white hover:shadow-md"
+                  }`}
+                  style={{ padding: "0.75rem" }}
+                  onClick={() => setSelectedTemplate(tpl.id)}
                 >
-                  {tpl.name}
-                </p>
-                <div
-                  className="bg-gray-200 flex items-center justify-center text-xs md:text-sm text-gray-600 rounded"
-                  style={{ height: "5rem" }}
-                >
-                  Preview
-                </div>
+                  <p
+                    className="text-sm md:text-base font-medium"
+                    style={{ marginBottom: "0.5rem" }}
+                  >
+                    {tpl.name}
+                  </p>
+                  <div
+                    className="bg-gray-200 flex items-center justify-center text-xs md:text-sm text-gray-600 rounded"
+                    style={{ height: "5rem" }}
+                  >
+                    Preview
+                  </div>
 
-                {/* Checkmark for active template */}
-                {selectedTemplate === tpl.id && (
-                  <span className="absolute top-2 right-2 text-blue-600">
-                    <Check size={16} />
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {/* Checkmark for active template */}
+                  {selectedTemplate === tpl.id && (
+                    <span className="absolute top-2 right-2 text-blue-600">
+                      <Check size={16} />
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

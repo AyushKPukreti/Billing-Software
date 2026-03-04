@@ -13,6 +13,8 @@ import {
   CheckCircle,
   ChevronRight,
   Landmark,
+  FileDigit,
+  Hash,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { UserContext } from "../context/userContext";
@@ -31,6 +33,8 @@ const Profile = () => {
     phone: "",
     email: "",
     taxId: "",
+    udyamNo: "",
+    hsnCode: "",
     address: {
       street: "",
       city: "",
@@ -63,6 +67,8 @@ const Profile = () => {
           phone: data.phone || "",
           email: data.email || "",
           taxId: data.taxId || "",
+          udyamNo: data.udyamNo || "",
+          hsnCode: data.hsnCode || "",
           address: {
             street: data.address?.street || "",
             city: data.address?.city || "",
@@ -99,7 +105,13 @@ const Profile = () => {
   // Handle top-level field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Auto-format Udyam Number to uppercase
+    if (name === "udyamNo") {
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // Handle address field changes
@@ -347,6 +359,60 @@ const Profile = () => {
               placeholder="Enter tax ID or GST number"
             />
           </div>
+
+
+          {/* Udyam Number */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700"
+              style={{ marginBottom: "8px" }}
+            >
+              <FileDigit
+                className="w-4 h-4 inline"
+                style={{ marginRight: "8px" }}
+              />
+              Udyam Number
+            </label>
+            <input
+              type="text"
+              name="udyamNo"
+              value={formData.udyamNo}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{ padding: "10px" }}
+              placeholder="UDYAM-XX-XX-XXXXXXX"
+            />
+            <p className="text-xs text-gray-500" style={{marginTop: '4px'}}>
+              Format: UDYAM-XX-XX-XXXXXXX
+            </p>
+          </div>
+
+          {/* HSN Code */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700"
+              style={{ marginBottom: "8px" }}
+            >
+              <Hash
+                className="w-4 h-4 inline"
+                style={{ marginRight: "8px" }}
+              />
+              HSN Code
+            </label>
+            <input
+              type="text"
+              name="hsnCode"
+              value={formData.hsnCode}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{ padding: "10px" }}
+              placeholder="Enter HSN Code (4-8 digits)"
+            />
+            <p className="text-xs text-gray-500" style={{marginTop: '4px'}}>
+              Harmonized System of Nomenclature code for your products
+            </p>
+          </div>
+
         </div>
       </div>
 

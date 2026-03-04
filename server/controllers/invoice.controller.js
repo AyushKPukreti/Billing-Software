@@ -248,12 +248,14 @@ export const updateInvoice = async (req, res) => {
 
       // Bill-level taxes
       let totalTax = 0;
+      
       const updatedTaxes = (data.taxes || invoice.taxes || []).map((tax) => {
         const rate = Number(tax.rate || 0);
         const amount = (afterDiscount * rate) / 100;
         totalTax += amount;
         return { ...tax, amount };
       });
+
 
       // Final total
       invoice.items = updatedItems; // ✅ Assign the calculated items to invoice
@@ -268,7 +270,7 @@ export const updateInvoice = async (req, res) => {
     // Update other fields
     Object.keys(data).forEach(key => {
       // Skip items since we already handled them above
-      if (key !== 'items' && data[key] !== undefined) {
+      if (key !== 'items' && key !== 'taxes' && data[key] !== undefined) {
         invoice[key] = data[key];
       }
     });

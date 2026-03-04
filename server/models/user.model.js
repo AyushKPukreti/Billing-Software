@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    udyamNo: {
+      type: String,
+      trim: true,
+    },
     bankDetails: {
       accountHolderName: {
         type: String,
@@ -135,6 +139,6 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const UserModel = mongoose.model("User", userSchema);
+const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default UserModel;

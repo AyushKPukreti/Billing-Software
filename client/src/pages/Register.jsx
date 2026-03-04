@@ -28,6 +28,7 @@ const Register = () => {
       country: "India",
     },
     taxId: "",
+    udyamNo: "",
     hsnCode: "",
   });
 
@@ -95,6 +96,20 @@ const Register = () => {
     }
   };
 
+  // Udyam Number validation function
+  const validateUdyamNo = (udyamNo) => {
+    if (!udyamNo.trim()) return ""; // Optional field, no error if empty
+
+    // Udyam number format: UDYAM-XX-XX-XXXXXXX (16 characters total)
+    const udyamRegex = /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/;
+
+    if (!udyamRegex.test(udyamNo.trim().toUpperCase())) {
+      return "Invalid Udyam number format. Expected: UDYAM-XX-XX-XXXXXXX";
+    }
+
+    return "";
+  };
+
   const validateStep = (step) => {
     const newErrors = {};
 
@@ -140,6 +155,22 @@ const Register = () => {
           newErrors.address.zipCode = "Zip code is required";
         if (!formData.address.country?.trim())
           newErrors.address.country = "Country is required";
+
+        // Validate Udyam Number if provided
+        if (formData.udyamNo.trim()) {
+          const udyamError = validateUdyamNo(formData.udyamNo);
+          if (udyamError) {
+            newErrors.udyamNo = udyamError;
+          }
+        }
+
+        // Validate HSN Code if provided (optional but should be valid if entered)
+        if (
+          formData.hsnCode.trim() &&
+          !/^\d{4,8}$/.test(formData.hsnCode.trim())
+        ) {
+          newErrors.hsnCode = "HSN Code should be 4-8 digits";
+        }
 
         // clean up address if empty
         if (Object.keys(newErrors.address).length === 0)
@@ -205,6 +236,7 @@ const Register = () => {
         country: formData.address.country.trim() || "India",
       },
       taxId: formData.taxId.trim(),
+      udyamNo: formData.udyamNo.trim(),
       hsnCode: formData.hsnCode.trim(),
     };
 
@@ -655,6 +687,37 @@ const Register = () => {
                   {errors.taxId}
                 </p>
               )}
+            </div>
+
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                style={{ marginBottom: "0.5rem" }}
+              >
+                Udyam Number
+              </label>
+              <input
+                type="text"
+                name="udyamNo"
+                value={formData.udyamNo}
+                onChange={handleInputChange}
+                style={{ width: "100%", padding: "0.75rem 1rem" }}
+                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  errors.udyamNo ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Enter UDYAM-XX-XX-XXXXXXX"
+              />
+              {errors.udyamNo && (
+                <p
+                  className="text-red-500 text-sm"
+                  style={{ marginTop: "0.25rem" }}
+                >
+                  {errors.udyamNo}
+                </p>
+              )}
+              <p className="text-xs text-gray-500" style={{marginTop: '4px'}}>
+                Format: UDYAM-XX-XX-XXXXXXX
+              </p>
             </div>
 
             <div
