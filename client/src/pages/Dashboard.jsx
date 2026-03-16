@@ -17,6 +17,36 @@ import axios from "axios";
 import { UserContext } from "../context/userContext";
 import UnifiedChart from "../components/UnifiedChart";
 
+export const tokens = {
+  colors: {
+    bgCanvas: "#F7F7F8",
+    bgSurface: "#FFFFFF",
+    borderLight: "#E6E7EA",
+    textPrimary: "#0F1724",
+    textSecondary: "#6B7280",
+    accent: "#0071E3",
+    success: "#10B981",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+  },
+  shadows: {
+    soft: "0 4px 12px rgba(16,24,40,0.06)",
+    hover: "0 8px 24px rgba(16,24,40,0.08)",
+  },
+  radii: {
+    card: "12px",
+    pill: "9999px",
+  },
+  spacing: {
+    xs: "4px",
+    sm: "8px",
+    md: "16px",
+    lg: "24px",
+    xl: "32px",
+    xxl: "48px",
+  }
+};
+
 const Dashboard = () => {
   const { currentUser } = useContext(UserContext);
 
@@ -98,12 +128,12 @@ const Dashboard = () => {
       });
 
       // Show recent invoices (all statuses except draft)
-      const recentInvoices = invoices
+      const recentInvoicesArr = invoices
         .filter((inv) => inv.status !== "draft")
         .sort((a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate))
         .slice(0, 6);
 
-      setRecentInvoices(recentInvoices);
+      setRecentInvoices(recentInvoicesArr);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -111,35 +141,13 @@ const Dashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "paid":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "sent":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "draft":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      case "overdue":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "partial":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
   const getStatusIcon = (status) => {
     switch (status) {
-      case "paid":
-        return CheckCircle;
-      case "sent":
-        return Clock;
-      case "overdue":
-        return AlertTriangle;
-      case "partial":
-        return CreditCard;
-      default:
-        return FileText;
+      case "paid": return CheckCircle;
+      case "sent": return Clock;
+      case "overdue": return AlertTriangle;
+      case "partial": return CreditCard;
+      default: return FileText;
     }
   };
 
@@ -148,303 +156,382 @@ const Dashboard = () => {
       title: "Total Clients",
       value: stats.totalClients,
       icon: Users,
-      color: "bg-blue-500",
+      accentText: tokens.colors.accent,
+      accentBg: "#EFF6FF",
       link: "/clients",
-      description: "Active clients"
     },
     {
       title: "Total Invoices",
       value: stats.totalInvoices,
       icon: FileText,
-      color: "bg-green-500",
+      accentText: tokens.colors.success,
+      accentBg: "#ECFDF5",
       link: "/invoices",
-      description: "All invoices"
     },
     {
       title: "Total Revenue",
       value: `₹${stats.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
       icon: DollarSign,
-      color: "bg-yellow-500",
+      accentText: tokens.colors.warning,
+      accentBg: "#FFFBEB",
       link: "/invoices",
-      description: "Collected amount"
     },
     {
       title: "Amount Due",
       value: `₹${stats.totalAmountDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
       icon: TrendingUp,
-      color: "bg-red-500",
+      accentText: tokens.colors.danger,
+      accentBg: "#FEF2F2",
       link: "/invoices",
-      description: "Pending collection"
     },
     {
       title: "Sent Invoices",
       value: stats.sentInvoices,
       icon: FileText,
-      color: "bg-indigo-500",
+      accentText: "#6366F1", // Indigo
+      accentBg: "#EEF2FF",
       link: "/invoices",
-      description: "Awaiting payment"
     },
     {
       title: "Overdue",
       value: stats.overdueInvoices,
       icon: AlertTriangle,
-      color: "bg-red-600",
+      accentText: tokens.colors.danger,
+      accentBg: "#FEF2F2",
       link: "/invoices",
-      description: "Past due date"
     },
     {
-      title: "Partial Payments",
+      title: "Partial",
       value: stats.partialPayments,
       icon: CreditCard,
-      color: "bg-orange-500",
+      accentText: "#EA580C", // Orange
+      accentBg: "#FFF7ED",
       link: "/invoices",
-      description: "Partially paid"
     },
     {
-      title: "Draft Invoices",
+      title: "Drafts",
       value: stats.draftInvoices,
       icon: FileText,
-      color: "bg-gray-500",
+      accentText: tokens.colors.textSecondary,
+      accentBg: "#F3F4F6",
       link: "/invoices",
-      description: "Not sent yet"
     },
   ];
 
   if (loading) {
     return (
       <div
-        className="flex items-center justify-center"
-        style={{ height: "300px" }}
+        className="flex items-center justify-center min-h-screen"
+        style={{ backgroundColor: tokens.colors.bgCanvas }}
       >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: tokens.colors.accent }}></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: "24px" }}>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-sm sm:text-base text-gray-600" style={{ marginTop: "4px" }}>
-            Welcome to your billing dashboard
-          </p>
-        </div>
-        <div className="flex" style={{ marginTop: "16px" }}>
-          <Link
-            to="/invoices/create"
-            className="inline-flex items-center border border-transparent rounded-lg shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            style={{ padding: "10px 16px" }}
-          >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5" style={{ marginRight: "8px" }} />
-            <span className="hidden sm:inline">Create Invoice</span>
-            <span className="sm:hidden">New Invoice</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div
-        className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        style={{ marginBottom: "24px" }}
-      >
-        {statCards.slice(0, 4).map((card, index) => {
-          const Icon = card.icon;
-          return (
+    <div style={{ backgroundColor: tokens.colors.bgCanvas, minHeight: "100vh", padding: `${tokens.spacing.xl} 0`, fontFamily: "'Inter', 'SF Pro Text', sans-serif" }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: tokens.spacing.lg }}>
+          <div>
+            <h1 style={{ fontSize: "32px", fontWeight: "700", color: tokens.colors.textPrimary, lineHeight: "40px", letterSpacing: "-0.02em", margin: 0 }}>
+              Dashboard
+            </h1>
+            <p style={{ fontSize: "16px", color: tokens.colors.textSecondary, marginTop: "4px" }}>
+              Welcome to your billing dashboard
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0 flex">
             <Link
-              key={index}
-              to={card.link}
-              className="relative bg-white shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+              to="/invoices/create"
               style={{
-                paddingTop: "16px",
-                paddingBottom: "16px",
-                paddingLeft: "12px",
-                paddingRight: "12px",
+                display: "inline-flex",
+                alignItems: "center",
+                backgroundColor: tokens.colors.accent,
+                color: "#FFFFFF",
+                padding: "10px 20px",
+                borderRadius: tokens.radii.pill,
+                fontSize: "14px",
+                fontWeight: "600",
+                textDecoration: "none",
+                boxShadow: "0 2px 8px rgba(0, 113, 227, 0.24)",
+                transition: "all 200ms ease",
               }}
-            >
-              <div className="flex items-center">
-                <div className={`rounded-lg ${card.color}`} style={{ padding: "10px" }}>
-                  <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
-                <div style={{ marginLeft: "12px", flex: "1" }}>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">
-                    {card.title}
-                  </p>
-                  <p className="text-lg sm:text-xl font-bold text-gray-900" style={{ marginTop: "2px" }}>
-                    {card.value}
-                  </p>
-                  <p className="text-xs text-gray-500" style={{ marginTop: "2px" }}>
-                    {card.description}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Additional Stats Grid for smaller screens */}
-      <div
-        className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        style={{ marginBottom: "24px" }}
-      >
-        {statCards.slice(4).map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <Link
-              key={index}
-              to={card.link}
-              className="relative bg-white shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
-              style={{
-                paddingTop: "12px",
-                paddingBottom: "12px",
-                paddingLeft: "10px",
-                paddingRight: "10px",
+              onMouseEnter={(e) => {
+                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 113, 227, 0.32)";
               }}
+              onMouseLeave={(e) => {
+                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                  e.currentTarget.style.transform = "none";
+                }
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 113, 227, 0.24)";
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = `2px solid ${tokens.colors.accent}`;
+                e.currentTarget.style.outlineOffset = "2px";
+              }}
+              onBlur={(e) => e.currentTarget.style.outline = "none"}
             >
-              <div className="flex items-center">
-                <div className={`rounded-lg ${card.color}`} style={{ padding: "8px" }}>
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
-                <div style={{ marginLeft: "10px", flex: "1" }}>
-                  <p className="text-xs font-medium text-gray-600 truncate">
-                    {card.title}
-                  </p>
-                  <p className="text-base sm:text-lg font-bold text-gray-900" style={{ marginTop: "2px" }}>
-                    {card.value}
-                  </p>
-                </div>
-              </div>
+              <Plus className="h-5 w-5 mr-2" />
+              Create Invoice
             </Link>
-          );
-        })}
-      </div>
-
-      {/* Unified Chart Section */}
-      <div className="bg-white shadow rounded-lg border border-gray-200" style={{ marginBottom: "24px" }}>
-        <div style={{ padding: "16px" }}>
-          <UnifiedChart data={invoiceData} />
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: "16px" }}>
-        {/* Recent Invoices */}
-        <div className="lg:col-span-2 bg-white shadow rounded-lg border border-gray-200">
-          <div style={{ padding: "16px" }}>
-            <h3 className="text-lg font-semibold text-gray-900" style={{ marginBottom: "16px" }}>
-              Recent Activity
-            </h3>
-            {recentInvoices.length > 0 ? (
-              <div style={{ gap: "12px", display: "flex", flexDirection: "column" }}>
-                {recentInvoices.map((invoice) => {
-                  const StatusIcon = getStatusIcon(invoice.status);
-                  return (
-                    <div
-                      key={invoice._id}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                      style={{ padding: "12px" }}
-                    >
-                      <div className="flex items-center" style={{ gap: "12px", flex: "1", minWidth: "0" }}>
-                        <div className="flex-shrink-0">
-                          <StatusIcon className={`h-6 w-6 sm:h-8 sm:w-8 ${
-                            invoice.status === "paid" ? "text-green-500" :
-                            invoice.status === "partial" ? "text-orange-500" :
-                            invoice.status === "overdue" ? "text-red-500" :
-                            "text-blue-500"
-                          }`} />
-                        </div>
-                        <div style={{ flex: "1", minWidth: "0" }}>
-                          <p className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                            {invoice.invoiceNumber}
-                          </p>
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">
-                            {invoice.client?.companyName || "Unknown Client"}
-                          </p>
-                          {invoice.status === "partial" && (
-                            <p className="text-xs text-orange-600" style={{ marginTop: "2px" }}>
-                              Paid: ₹{invoice.amountPaid?.toFixed(2)} / Due: ₹{invoice.amountDue?.toFixed(2)}
-                            </p>
-                          )}
-                          {invoice.status === "sent" && (
-                            <p className="text-xs text-blue-600" style={{ marginTop: "2px" }}>
-                              Due: ₹{invoice.amountDue?.toFixed(2)}
-                            </p>
-                          )}
-                          {invoice.status === "overdue" && (
-                            <p className="text-xs text-red-600" style={{ marginTop: "2px" }}>
-                              Overdue: ₹{invoice.amountDue?.toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right" style={{ minWidth: "80px" }}>
-                        <p className="text-sm sm:text-base font-semibold text-gray-900">
-                          ₹{invoice.totalAmount.toFixed(2)}
-                        </p>
-                        <span
-                          className={`inline-flex items-center rounded-full text-xs font-medium border ${getStatusColor(
-                            invoice.status
-                          )}`}
-                          style={{ padding: "2px 8px", marginTop: "4px" }}
-                        >
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center" style={{ paddingTop: "32px", paddingBottom: "32px" }}>
-                <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" style={{ marginLeft: "auto", marginRight: "auto", marginBottom: "8px" }} />
-                <p className="text-gray-500 text-sm sm:text-base">No recent activity</p>
-              </div>
-            )}
-            <div style={{ marginTop: "16px" }}>
+        {/* Summary Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6" style={{ marginBottom: tokens.spacing.xl }}>
+          {statCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
               <Link
-                to="/invoices"
-                className="w-full flex justify-center items-center border border-gray-300 rounded-lg text-sm sm:text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                style={{ padding: "10px 16px" }}
+                key={index}
+                to={card.link}
+                style={{
+                  backgroundColor: tokens.colors.bgSurface,
+                  borderRadius: tokens.radii.card,
+                  padding: tokens.spacing.lg,
+                  border: `1px solid ${tokens.colors.borderLight}`,
+                  boxShadow: tokens.shadows.soft,
+                  transition: "all 150ms ease",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  outline: "none",
+                }}
+                onMouseEnter={(e) => {
+                  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                  }
+                  e.currentTarget.style.boxShadow = tokens.shadows.hover;
+                }}
+                onMouseLeave={(e) => {
+                  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    e.currentTarget.style.transform = "none";
+                  }
+                  e.currentTarget.style.boxShadow = tokens.shadows.soft;
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = `2px solid ${tokens.colors.accent}`;
+                  e.currentTarget.style.outlineOffset = "2px";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = "none";
+                }}
+                tabIndex={0}
               >
-                View all invoices
+                <div
+                  className="hidden sm:flex"
+                  style={{
+                    backgroundColor: card.accentBg,
+                    color: card.accentText,
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: tokens.spacing.md,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "13px", fontWeight: "500", color: tokens.colors.textSecondary, marginBottom: "4px" }} className="truncate">
+                    {card.title}
+                  </p>
+                  <p style={{ fontSize: "24px", fontWeight: "600", color: tokens.colors.textPrimary, lineHeight: "1.2" }} className="truncate">
+                    {card.value}
+                  </p>
+                </div>
               </Link>
+            );
+          })}
+        </div>
+
+        {/* Unified Chart */}
+        <div style={{ marginBottom: tokens.spacing.xl }}>
+          <div
+            style={{
+              backgroundColor: tokens.colors.bgSurface,
+              borderRadius: tokens.radii.card,
+              border: `1px solid ${tokens.colors.borderLight}`,
+              boxShadow: tokens.shadows.soft,
+              padding: tokens.spacing.lg,
+            }}
+          >
+            <UnifiedChart data={invoiceData} tokens={tokens} />
+            <div style={{ marginTop: tokens.spacing.md, backgroundColor: "#EEF2FF", borderRadius: "8px", padding: "12px 16px" }}>
+              <p style={{ fontSize: "13px", color: tokens.colors.accent, margin: 0 }}>
+                💡 <strong>Insight:</strong> Showing your billing trends over time. Switch to Revenue view to track collections.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Business Type Cards */}
-        <div className="bg-white shadow rounded-lg border border-gray-200">
-          <div style={{ padding: "16px" }}>
-            <h3 className="text-lg font-semibold text-gray-900" style={{ marginBottom: "16px" }}>
-              Business Types
-            </h3>
-            <div style={{ gap: "12px", display: "flex", flexDirection: "column" }}>
-              {(Array.isArray(currentUser?.businessType)
-                ? currentUser.businessType
-                : []
-              ).map((type) => {
-                const meta = BUSINESS_META[type] || {
-                  name: titleize(type),
-                  icon: Settings,
-                };
-                const Icon = meta.icon;
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Recent Activity */}
+          <div className="lg:col-span-2">
+            <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
+              Recent Activity
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacing.sm }}>
+              {recentInvoices.length > 0 ? (
+                recentInvoices.map((invoice) => {
+                  const StatusIcon = getStatusIcon(invoice.status);
+                  let pillColors = { bg: "#F3F4F6", text: "#6B7280" };
+                  if (invoice.status === "paid") pillColors = { bg: "#ECFDF5", text: "#10B981" };
+                  else if (invoice.status === "sent") pillColors = { bg: "#EFF6FF", text: "#0071E3" };
+                  else if (invoice.status === "overdue") pillColors = { bg: "#FEF2F2", text: "#DC2626" };
+                  else if (invoice.status === "partial") pillColors = { bg: "#FFFBEB", text: "#F59E0B" };
 
+                  return (
+                    <div
+                      key={invoice._id}
+                      style={{
+                        backgroundColor: tokens.colors.bgSurface,
+                        borderRadius: tokens.radii.card,
+                        border: `1px solid ${tokens.colors.borderLight}`,
+                        boxShadow: "0 1px 3px rgba(16,24,40,0.02)",
+                        padding: "16px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        transition: "all 150ms ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                        }
+                        e.currentTarget.style.boxShadow = tokens.shadows.soft;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                          e.currentTarget.style.transform = "none";
+                        }
+                        e.currentTarget.style.boxShadow = "0 1px 3px rgba(16,24,40,0.02)";
+                      }}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: tokens.spacing.md, flex: 1, minWidth: 0 }}>
+                        <div className="hidden sm:flex" style={{ backgroundColor: pillColors.bg, color: pillColors.text, borderRadius: "50%", width: "40px", height: "40px", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <StatusIcon className="h-5 w-5" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 style={{ fontSize: "15px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }} className="truncate">
+                              {invoice.invoiceNumber}
+                            </h3>
+                            <span
+                              style={{
+                                backgroundColor: pillColors.bg,
+                                color: pillColors.text,
+                                padding: "2px 8px",
+                                borderRadius: tokens.radii.pill,
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.02em"
+                              }}
+                              aria-label={`Status: ${invoice.status}`}
+                            >
+                              {invoice.status}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: "13px", color: tokens.colors.textSecondary, margin: 0 }} className="truncate">
+                            {invoice.client?.companyName || "Unknown Client"} 
+                            {(invoice.status === 'partial' || invoice.status === 'sent' || invoice.status === 'overdue') && invoice.amountDue && (
+                              <span style={{ marginLeft: "8px", color: invoice.status === 'overdue' ? tokens.colors.danger : tokens.colors.textSecondary }}>
+                                • Due: ₹{invoice.amountDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", paddingLeft: tokens.spacing.md, flexShrink: 0 }}>
+                        <p style={{ fontSize: "16px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0, fontVariantNumeric: "tabular-nums" }}>
+                          ₹{invoice.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 0", backgroundColor: tokens.colors.bgSurface, borderRadius: tokens.radii.card, border: `1px solid ${tokens.colors.borderLight}` }}>
+                  <FileText className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                  <p style={{ color: tokens.colors.textSecondary, fontSize: "14px" }}>No recent activity</p>
+                </div>
+              )}
+              
+              <Link
+                to="/invoices"
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  padding: "12px",
+                  color: tokens.colors.textSecondary,
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  textDecoration: "none",
+                  backgroundColor: "transparent",
+                  borderRadius: "8px",
+                  transition: "color 150ms ease, background-color 150ms ease",
+                  marginTop: "8px"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.03)";
+                  e.currentTarget.style.color = tokens.colors.textPrimary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = tokens.colors.textSecondary;
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = `2px solid ${tokens.colors.accent}`;
+                  e.currentTarget.style.outlineOffset = "2px";
+                }}
+                onBlur={(e) => e.currentTarget.style.outline = "none"}
+              >
+                View all invoices &rarr;
+              </Link>
+            </div>
+          </div>
+
+          {/* Business Types Panel */}
+          <div>
+            <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
+              Business Modules
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacing.sm }}>
+              {(Array.isArray(currentUser?.businessType) ? currentUser.businessType : []).map((type) => {
+                const meta = BUSINESS_META[type] || { name: titleize(type), icon: Settings };
+                const Icon = meta.icon;
                 return (
                   <div
                     key={type}
-                    className="flex items-center rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                    style={{ padding: "12px" }}
+                    style={{
+                      backgroundColor: tokens.colors.bgSurface,
+                      borderRadius: tokens.radii.card,
+                      border: `1px solid ${tokens.colors.borderLight}`,
+                      boxShadow: "0 1px 3px rgba(16,24,40,0.02)",
+                      padding: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: tokens.spacing.md,
+                    }}
                   >
-                    <div className="flex-shrink-0">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
+                    <div style={{ backgroundColor: "#F3F4F6", color: "#6B7280", borderRadius: "10px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <div style={{ marginLeft: "12px" }}>
-                      <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                    <div>
+                      <h3 style={{ fontSize: "14px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }}>
                         {meta.name}
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-600">
-                        Specialized billing features
+                      <p style={{ fontSize: "12px", color: tokens.colors.textSecondary, margin: "2px 0 0 0" }}>
+                        Active module
                       </p>
                     </div>
                   </div>

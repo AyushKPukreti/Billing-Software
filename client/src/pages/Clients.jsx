@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ClientModal from '../components/ClientModal';
 import AppleDataTable from '../components/AppleDataTable';
@@ -15,6 +16,7 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchClients();
@@ -129,6 +131,15 @@ const Clients = () => {
             title="Edit"
           >
             <Edit2 size={15} />
+          </button>
+          <button
+            className="adt-action-btn"
+            style={{ color: 'var(--adt-text-secondary)', background: 'transparent' }}
+            onClick={() => navigate(`/clients/${row._id}/ledger`)}
+            aria-label={`View Ledger for ${row.companyName}`}
+            title="View Ledger"
+          >
+            <BookOpen size={15} />
           </button>
           <button
             className="adt-action-btn adt-action-btn--danger"

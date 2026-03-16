@@ -71,24 +71,41 @@ const Invoices = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [notificationTypes, setNotificationTypes] = useState({ email: true, sms: false });
 
   const handleOpenEmailModal = (invoice) => {
     setEmailInvoice(invoice);
     setShowEmailModal(true);
+    // Auto-select SMS if email is missing, otherwise default to email
+    setNotificationTypes({ 
+      email: !!invoice.client?.email, 
+      sms: !!invoice.client?.phone 
+    });
   };
 
-  const handleSendEmail = async () => {
-    if (!emailInvoice || !emailInvoice.client?.email) {
-      toast.error("Client email not found. Please update client details.");
+  const handleSendNotification = async () => {
+    if (!emailInvoice) return;
+    
+    if (notificationTypes.email && !emailInvoice.client?.email) {
+      toast.error("Client email not found.");
+      return;
+    }
+    
+    if (notificationTypes.sms && !emailInvoice.client?.phone) {
+      toast.error("Client phone number not found.");
+      return;
+    }
+
+    if (!notificationTypes.email && !notificationTypes.sms) {
+      toast.error("Please select at least one notification method.");
       return;
     }
 
     setIsSendingEmail(true);
     try {
-      // TODO: Replace with your actual EmailJS credentials
-      const serviceId = "YOUR_SERVICE_ID";
-      const templateId = "YOUR_TEMPLATE_ID";
-      const publicKey = "YOUR_PUBLIC_KEY";
+      const serviceId = 'service_hj6pavh';
+      const templateId = 'template_c4u1pia';
+      const publicKey = 'FMEevJXztJRf5JwHk';
 
       const templateParams = {
         to_email: emailInvoice.client.email,
@@ -98,16 +115,34 @@ const Invoices = () => {
         due_date:  emailInvoice.dueDate ? new Date(emailInvoice.dueDate).toLocaleDateString("en-GB") : ""
       };
 
-      // Un-comment and configure this when ready:
-      // await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      // Send Email if selected
+      if (notificationTypes.email) {
+        await emailjs.send(serviceId, templateId, templateParams, publicKey);
+        toast.success(`Email sent to ${emailInvoice.client.email}`);
+      }
       
-      console.log("EmailJS Params:", templateParams);
-      toast.success(`Email sent to ${emailInvoice.client.email}`);
+      // Send Twilio SMS Notification if selected
+      if (notificationTypes.sms && emailInvoice.client?.phone) {
+        try {
+          await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/send-sms`, {
+            to: emailInvoice.client.phone,
+            invoiceNumber: emailInvoice.invoiceNumber,
+            amount: emailInvoice.totalAmount,
+            dueDate: templateParams.due_date,
+            customerName: templateParams.to_name
+          });
+          toast.success(`SMS reminder sent to ${emailInvoice.client.phone}`);
+        } catch (smsError) {
+          console.error("Twilio SMS Error:", smsError);
+          toast.error("Failed to send SMS reminder.");
+        }
+      }
+
       setShowEmailModal(false);
       setEmailInvoice(null);
     } catch (error) {
-      console.error("Email send error:", error);
-      toast.error("Failed to send email");
+      console.error("Notification Error:", error);
+      toast.error("Failed to send notification.");
     } finally {
       setIsSendingEmail(false);
     }
@@ -832,7 +867,7 @@ const Invoices = () => {
         }
       />
 
-      {/* Email Confirmation Modal */}
+      {/* Notification Modal */}
       {showEmailModal && emailInvoice && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -842,23 +877,57 @@ const Invoices = () => {
         }}>
           <div style={{
             background: '#fff', borderRadius: '16px', padding: '24px',
-            width: '90%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+            width: '90%', maxWidth: '440px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#1D1D1F' }}>Send Reminder Email</h3>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#1D1D1F' }}>Send Invoice Reminder</h3>
               <button onClick={() => setShowEmailModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
                 <X size={20} color="#6E6E73" />
               </button>
             </div>
-            <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '16px', lineHeight: 1.5 }}>
-              You are about to send a pending bill reminder to <strong>{emailInvoice.client?.companyName}</strong> ({emailInvoice.client?.email || 'No email found'}).
+            
+            <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '20px', lineHeight: 1.5 }}>
+              Choose how you want to notify <strong>{emailInvoice.client?.companyName}</strong>.
             </p>
-            <div style={{ background: '#F5F5F7', padding: '16px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', color: '#1D1D1F', border: '1px solid #E5E5E7' }}>
-              <p style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#6E6E73' }}>Email Preview:</p>
-              <p style={{ margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
-                "Dear {emailInvoice.client?.companyName},<br/><br/>Your bill for invoice #{emailInvoice.invoiceNumber} amounting to Rs. {emailInvoice.totalAmount} is pending. Please clear it by {emailInvoice.dueDate ? new Date(emailInvoice.dueDate).toLocaleDateString('en-GB') : '-'}.<br/><br/>Thank you."
-              </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <label style={{ 
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                borderRadius: '10px', border: '1px solid #E5E5E7', cursor: (emailInvoice.client?.email) ? 'pointer' : 'not-allowed',
+                background: notificationTypes.email ? '#F5F5F7' : '#fff',
+                opacity: emailInvoice.client?.email ? 1 : 0.6
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={notificationTypes.email} 
+                  onChange={(e) => setNotificationTypes(prev => ({ ...prev, email: e.target.checked }))}
+                  disabled={!emailInvoice.client?.email}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600 }}>Send via Email</div>
+                  <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.email || 'No email available'}</div>
+                </div>
+              </label>
+
+              <label style={{ 
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                borderRadius: '10px', border: '1px solid #E5E5E7', cursor: (emailInvoice.client?.phone) ? 'pointer' : 'not-allowed',
+                background: notificationTypes.sms ? '#F5F5F7' : '#fff',
+                opacity: emailInvoice.client?.phone ? 1 : 0.6
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={notificationTypes.sms} 
+                  onChange={(e) => setNotificationTypes(prev => ({ ...prev, sms: e.target.checked }))}
+                  disabled={!emailInvoice.client?.phone}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600 }}>Send via SMS (Twilio)</div>
+                  <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.phone || 'No phone number available'}</div>
+                </div>
+              </label>
             </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button
                 onClick={() => setShowEmailModal(false)}
@@ -868,11 +937,15 @@ const Invoices = () => {
                 Cancel
               </button>
               <button
-                onClick={handleSendEmail}
-                style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: '#0071E3', color: '#fff', cursor: 'pointer', fontWeight: 600, opacity: isSendingEmail ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
-                disabled={isSendingEmail || !emailInvoice.client?.email}
+                onClick={handleSendNotification}
+                style={{ 
+                  padding: '10px 24px', borderRadius: '10px', border: 'none', 
+                  background: '#0071E3', color: '#fff', cursor: 'pointer', fontWeight: 600,
+                  opacity: (isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)) ? 0.7 : 1
+                }}
+                disabled={isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)}
               >
-                {isSendingEmail ? "Sending..." : "Send Email"}
+                {isSendingEmail ? "Sending..." : "Send Now"}
               </button>
             </div>
           </div>

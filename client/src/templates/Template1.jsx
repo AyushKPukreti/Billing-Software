@@ -1,7 +1,7 @@
 import React, { useContext, forwardRef } from "react";
 import { UserContext } from "../context/userContext";
 
-const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
+const Template1 = forwardRef(({ invoiceData, numberToWords, copyType }, ref) => {
   const { currentUser } = useContext(UserContext);
 
   const hasHSN = invoiceData.items.some(
@@ -23,7 +23,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
   return (
     <div
       ref={ref}
-      className="w-full font-sans"
+      className="w-full font-sans invoice-root text-[clamp(12px,1.5vw,16px)] print:text-[12pt]"
       style={{
         color: "#000000",
         backgroundColor: "#ffffff",
@@ -51,28 +51,24 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
             <img
               src={currentUser.logo}
               alt="Logo"
-              style={{ height: "80px", width: "80px" }}
+              className="h-20 w-20 object-contain"
             />
           )}
           <div style={{ textAlign: "center" }}>
             <div
-              style={{
-                fontSize: "50px",
-                fontWeight: "bold",
-                letterSpacing: "2px",
-              }}
+              className="font-bold tracking-widest text-[3em]"
             >
               {currentUser.businessName.toUpperCase()}
             </div>
             {/* Company Details in Header */}
-            <div style={{ fontSize: "14px", lineHeight: "1.4" }}>
+            <div className="text-[1.1em] leading-snug">
               <div>
-                Office: {currentUser.address.street}
-                {currentUser.address.city}, {currentUser.address.state} -{" "}
-                {currentUser.address.zipCode}
+                Office: {currentUser?.address?.street}
+                {currentUser?.address?.city}, {currentUser?.address?.state} -{" "}
+                {currentUser?.address?.zipCode}
               </div>
               <div>
-                Phone: {currentUser.phone} | Email: {currentUser.email} |{" "}
+                Phone: {currentUser?.phone} | Email: {currentUser?.email} |{" "}
                 {currentUser?.taxId && `GSTIN/UIN: ${currentUser.taxId}`} | {" "}
                 {currentUser?.udyamNo && `Udyam No.: ${currentUser.udyamNo}`}
               </div>
@@ -83,18 +79,11 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
 
       {/* TAX INVOICE Header */}
       <div className="flex flex-col items-center">
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: "20px",
-            fontWeight: "bold",
-            marginBottom: "5px",
-          }}
-        >
+        <div className="text-center font-bold mb-1 text-[1.5em]">
           TAX INVOICE
         </div>
-        <div style={{ fontSize: "12px", marginBottom: "20px" }}>
-          (ORIGINAL FOR RECIPIENT)
+        <div className="text-[1em] mb-5">
+          ({copyType || "ORIGINAL FOR RECIPIENT"})
         </div>
       </div>
 
@@ -112,7 +101,6 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
           <table
             style={{
               width: "100%",
-              fontSize: "12px",
               borderCollapse: "collapse",
             }}
           >
@@ -126,30 +114,24 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
                     verticalAlign: "top",
                   }}
                 >
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                      marginBottom: "5px",
-                      fontSize: "16px",
-                    }}
-                  >
+                  <div className="font-bold mb-1 text-[1.2em]">
                     Bill To:
                   </div>
-                  <div style={{ fontWeight: "bold", fontSize: "15px" }}>
-                    {invoiceData.client.companyName}
+                  <div className="font-bold text-[1.1em]">
+                    {invoiceData.client?.companyName}
                   </div>
-                  <div style={{ fontSize: "14px" }}>{invoiceData.client.address.street}</div>
-                  <div style={{ fontSize: "14px" }}>
-                    {invoiceData.client.address.city},{" "}
-                    {invoiceData.client.address.state} -{" "}
-                    {invoiceData.client.address.zipCode}
+                  <div className="text-[1em]">{invoiceData.client?.address?.street}</div>
+                  <div className="text-[1em]">
+                    {invoiceData.client?.address?.city},{" "}
+                    {invoiceData.client?.address?.state} -{" "}
+                    {invoiceData.client?.address?.zipCode}
                   </div>
                   {invoiceData.client?.gstNumber && (
-                    <div style={{ fontSize: "14px" }}>GSTIN/UIN: {invoiceData.client?.gstNumber}</div>
+                    <div className="text-[1em]">GSTIN/UIN: {invoiceData.client?.gstNumber}</div>
                   )}
-                  <div style={{ fontSize: "14px" }}>
-                    State Name: {invoiceData.client.address.state}, Code:{" "}
-                    {invoiceData.client.address.zipCode.substring(0, 2)}
+                  <div className="text-[1em]">
+                    State Name: {invoiceData.client?.address?.state}, Code:{" "}
+                    {invoiceData.client?.address?.zipCode?.substring(0, 2) || ""}
                   </div>
                 </td>
               </tr>
@@ -162,7 +144,6 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
           <table
             style={{
               width: "100%",
-              fontSize: "14px",
               borderCollapse: "collapse",
             }}
           >
@@ -233,7 +214,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
       </div>
 
       {/* Main Items Table with Proper Borders */}
-      <div style={{ overflowX: "auto", marginBottom: "15px" }}>
+      <div className="break-inside-avoid" style={{ overflowX: "auto", marginBottom: "15px" }}>
         <table
           style={{
             width: "100%",
@@ -242,7 +223,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
             minWidth: "600px",
           }}
         >
-          <thead>
+          <thead className="table-header-group">
             <tr style={{ backgroundColor: "#f0f0f0" }}>
               <th
                 style={{
@@ -336,7 +317,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
           <tbody>
             {/* Actual Items */}
             {invoiceData.items.map((item, index) => (
-              <tr key={index} style={{ height: "auto", minHeight: "35px" }}>
+              <tr key={item._id || `item-${index}`} className="break-inside-avoid" style={{ height: "auto", minHeight: "35px" }}>
                 <td
                   style={{
                     borderLeft: "1px solid #000",
@@ -469,7 +450,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
             ))}
 
             {/* Tax Rows */}
-            <tr>
+            <tr className="print-keep-together">
               <td
                 colSpan={hasHSN ? 3 : 2}
                 style={{
@@ -525,7 +506,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
             </tr>
 
             {/* Total Row */}
-            <tr>
+            <tr className="print-keep-together">
               <td
                 colSpan={hasHSN ? 3 : 2}
                 style={{
@@ -581,7 +562,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
 
       {/* Compact Tax Breakdown Table */}
       {invoiceData.taxes && invoiceData.taxes.length > 0 && (
-        <div style={{ overflowX: "auto", marginBottom: "15px" }}>
+        <div className="break-inside-avoid print-keep-together" style={{ overflowX: "auto", marginBottom: "15px" }}>
           <table
             style={{
               width: "100%",
@@ -590,7 +571,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
               minWidth: "500px",
             }}
           >
-            <thead>
+            <thead className="table-header-group">
               <tr style={{ backgroundColor: "#f0f0f0" }}>
                 <th
                   style={{
@@ -777,6 +758,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords }, ref) => {
 
       {/* Bank Details and Signature */}
       <div
+        className="print-keep-together"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",

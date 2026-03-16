@@ -19,11 +19,13 @@ const CreateInvoice = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [Itemtotals, setItemTotals] = useState([]);
   const [totals, setTotals] = useState(0);
   const [validationErrors, setValidationErrors] = useState({});
   const [collapsedItems, setCollapsedItems] = useState([]);
+  const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "" });
   
   const toggleCollapse = (index) => {
     setCollapsedItems((prev) =>
@@ -54,11 +56,14 @@ const CreateInvoice = () => {
     notes: "",
     dueDate: "",
     status: "draft",
+    bankDetails: null,
   });
 
   useEffect(() => {
     fetchClients();
     fetchServices();
+    fetchBankAccounts();
+    fetchProfile();
 
     const today = new Date();
     const defaultDueDate = new Date();
@@ -89,6 +94,48 @@ const CreateInvoice = () => {
     } catch {
       toast.error("Failed to fetch services");
     }
+  };
+
+  const fetchBankAccounts = async () => {
+    try {
+      axios.defaults.withCredentials = true;
+      const res = await axios.get(`${BASE_URL}/users/bank-accounts`);
+      const accounts = res.data.bankAccounts || [];
+      setBankAccounts(accounts);
+      const primary = accounts.find((a) => a.isPrimary);
+      if (primary) {
+        setFormData((prev) => ({ ...prev, bankDetails: primary }));
+      } else if (accounts.length > 0) {
+        setFormData((prev) => ({ ...prev, bankDetails: accounts[0] }));
+      }
+    } catch {
+      toast.error("Failed to fetch bank accounts");
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      axios.defaults.withCredentials = true;
+      const res = await axios.get(`${BASE_URL}/users/profile`);
+      if (res.data.invoicePreferences) {
+        setInvoicePreferences({
+          prefix: res.data.invoicePreferences.prefix || "",
+          suffix: res.data.invoicePreferences.suffix || "",
+        });
+      }
+    } catch {
+      console.error("Failed to fetch profile");
+    }
+  };
+
+  const handleBankChange = (e) => {
+    const accountId = e.target.value;
+    if (!accountId) {
+      setFormData((prev) => ({ ...prev, bankDetails: null }));
+      return;
+    }
+    const selected = bankAccounts.find((a) => a._id === accountId);
+    setFormData((prev) => ({ ...prev, bankDetails: selected || null }));
   };
 
   const handleInputChange = (e) => {
@@ -407,6 +454,7 @@ const CreateInvoice = () => {
   const cleanPayload = (payload) => {
     return {
       ...payload,
+      invoiceNumber: `${invoicePreferences.prefix}${payload.invoiceNumber}${invoicePreferences.suffix}`,
       items: payload.items.map((item) => {
         const cleanedItem = { ...item };
         if (!cleanedItem.service) delete cleanedItem.service;
@@ -573,16 +621,43 @@ const CreateInvoice = () => {
               <label style={labelStyle}>
                 Invoice Number <span style={{ color: "red" }}>*</span>
               </label>
-              <input
-                name="invoiceNumber"
-                value={formData.invoiceNumber}
-                onChange={handleInputChange}
-                style={{
-                  ...inputStyle,
-                  borderColor: validationErrors.invoiceNumber ? "#DC2626" : "var(--border, #E5E5E7)",
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  ...inputStyle, 
+                  padding: 0, 
+                  overflow: "hidden", 
+                  borderColor: validationErrors.invoiceNumber ? "#DC2626" : "var(--border, #E5E5E7)" 
                 }}
                 {...errorFocusProps(validationErrors.invoiceNumber)}
-              />
+              >
+                {invoicePreferences.prefix && (
+                  <span style={{ padding: "12px 16px", background: "var(--surface-secondary, #FBFBFD)", borderRight: "1px solid var(--border, #E5E5E7)", color: "var(--text-secondary)", fontSize: "14px", fontWeight: 500 }}>
+                    {invoicePreferences.prefix}
+                  </span>
+                )}
+                <input
+                  name="invoiceNumber"
+                  value={formData.invoiceNumber}
+                  onChange={handleInputChange}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "14px",
+                    fontFamily: "inherit",
+                    color: "var(--text-primary, #1D1D1F)",
+                    outline: "none",
+                  }}
+                />
+                {invoicePreferences.suffix && (
+                  <span style={{ padding: "12px 16px", background: "var(--surface-secondary, #FBFBFD)", borderLeft: "1px solid var(--border, #E5E5E7)", color: "var(--text-secondary)", fontSize: "14px", fontWeight: 500 }}>
+                    {invoicePreferences.suffix}
+                  </span>
+                )}
+              </div>
               {validationErrors.invoiceNumber && (
                 <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>{validationErrors.invoiceNumber}</p>
               )}
@@ -653,6 +728,34 @@ const CreateInvoice = () => {
                 <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>{validationErrors.client}</p>
               )}
             </div>
+            
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>
+                Bank Account
+              </label>
+              {bankAccounts.length > 0 ? (
+                <select
+                  name="bankAccount"
+                  value={formData.bankDetails?._id || ""}
+                  onChange={handleBankChange}
+                  style={inputStyle}
+                >
+                  <option value="">Select Bank Account</option>
+                  {bankAccounts.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.bankName} - **** {b.accountNumber?.slice(-4)} {b.isPrimary ? "(Primary)" : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ fontSize: "14px", color: "#6E6E73" }}>No bank accounts found.</span>
+                  <button type="button" onClick={() => navigate("/profile")} style={{ padding: "6px 12px", borderRadius: "8px", background: "#F5F5F7", border: "none", color: "#0071E3", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+                    Add Account
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -677,27 +780,42 @@ const CreateInvoice = () => {
                   className="flex justify-between items-center cursor-pointer"
                   onClick={() => toggleCollapse(index)}
                   style={{ 
-                    padding: "20px 24px",
+                    padding: "16px 20px",
                     background: isCollapsed ? "transparent" : "var(--bg-page, #F7F7F8)",
                     borderBottom: isCollapsed ? "none" : "1px solid var(--border-light, #F0F0F2)",
                     borderRadius: isCollapsed ? "20px" : "20px 20px 0 0",
                     transition: "all 200ms ease"
                   }}
                 >
-                  <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                    {isCollapsed ? (
-                      <span style={{ fontSize: "16px" }}>{index + 1}. {item.description || "New Item"}</span>
-                    ) : (
-                      <ItemLabel index={index} description={item.description || "New Item"} />
+                  <div className="flex items-center gap-3" style={{ flex: 1, minWidth: 0, paddingRight: "16px" }}>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-tertiary, #86868B)", minWidth: "20px" }}>
+                      {index + 1}.
+                    </span>
+                    <span style={{ 
+                      fontSize: "15px", 
+                      fontWeight: 600, 
+                      color: "var(--text-primary, #1D1D1F)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis"
+                    }}>
+                      {item.description || <span style={{ color: "var(--text-tertiary, #86868B)", fontStyle: "italic" }}>New Item</span>}
+                    </span>
+                    {isCollapsed && item.quantity > 0 && (
+                      <span style={{ fontSize: "13px", color: "var(--text-secondary, #6E6E73)", whiteSpace: "nowrap" }}>
+                        × {item.quantity} {item.unitType !== "item" ? item.unitType : ""}
+                      </span>
                     )}
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                       ₹{(Itemtotals[index]?.subtotal || 0).toFixed(2)}
                     </span>
                     <div style={{
                       width: "28px", height: "28px", borderRadius: "50%", background: "var(--surface, #FFFFFF)",
-                      border: "1px solid var(--border, #E5E5E7)", display: "flex", alignItems: "center", justifyContent: "center"
+                      border: "1px solid var(--border, #E5E5E7)", display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "transform 200ms ease"
                     }}>
                       {isCollapsed ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronUp className="h-4 w-4 text-gray-500" />}
                     </div>
@@ -706,155 +824,226 @@ const CreateInvoice = () => {
 
                 {/* Form Content */}
                 {!isCollapsed && (
-                  <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
-                      
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={labelStyle}>Service Template</label>
+                  <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "16px", background: "var(--surface, #FFFFFF)", borderRadius: "0 0 20px 20px" }}>
+                    
+                    {/* Row 1: Service Type, Description, Action */}
+                    <div className="flex flex-col md:flex-row items-end gap-3 w-full">
+                      {/* Service Template */}
+                      <div style={{ flex: "0 0 160px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service</label>
                         <select
                           value={item.service || ""}
                           onChange={(e) => handleServiceChange(index, e.target.value)}
-                          style={inputStyle}
+                          style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
                           {...focusProps}
                         >
-                          <option value="">Custom Item (Enter details manually)</option>
+                          <option value="">Custom (Manual)</option>
                           {services.map((s) => (
                             <option key={s._id} value={s._id}>{s.name}</option>
                           ))}
                         </select>
                       </div>
 
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={labelStyle}>
-                          Description <span style={{ color: "red" }}>*</span>
-                        </label>
+                      {/* Description Field */}
+                      <div style={{ flex: "1 1 auto", minWidth: "0" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Item Description <span style={{ color: "#DC2626" }}>*</span></label>
                         <input
                           placeholder="e.g. Website Design, Server Hosting..."
                           value={item.description}
                           onChange={(e) => handleItemChange(index, "description", e.target.value)}
                           style={{
                             ...inputStyle,
+                            marginTop: 0,
+                            padding: "10px 14px",
+                            height: "42px",
                             borderColor: validationErrors[`item_${index}_description`] ? "#DC2626" : "var(--border, #E5E5E7)",
                           }}
                           {...errorFocusProps(validationErrors[`item_${index}_description`])}
                         />
-                        {validationErrors[`item_${index}_description`] && (
-                          <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
-                            {validationErrors[`item_${index}_description`]}
-                          </p>
-                        )}
                       </div>
 
-                      <div>
-                        <label style={labelStyle}>Quantity <span style={{ color: "red" }}>*</span></label>
+                      {/* Remove Button (Desktop) */}
+                      <div className="hidden md:flex items-center pb-[2px]">
+                        {formData.items.length > 1 ? (
+                          <button
+                            type="button"
+                            aria-label="Remove item"
+                            onClick={() => removeItem(index)}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "center", height: "38px", width: "38px", color: "#DC2626", background: "transparent", border: "none", cursor: "pointer", borderRadius: "8px", transition: "all 150ms ease"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        ) : (
+                          <div style={{ width: "38px" }}></div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Row 2: Inline Controls Row */}
+                    <div className="flex flex-wrap items-end gap-3 w-full">
+                      {/* Qty */}
+                      <div style={{ flex: "1 1 80px", minWidth: "80px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Qty <span style={{ color: "#DC2626" }}>*</span></label>
                         <input
                           type="number"
+                          placeholder="0"
                           value={item.quantity}
                           onChange={(e) => handleItemChange(index, "quantity", +e.target.value)}
                           style={{
                             ...inputStyle,
+                            marginTop: 0,
+                            padding: "10px 14px",
+                            height: "42px",
                             borderColor: validationErrors[`item_${index}_quantity`] ? "#DC2626" : "var(--border, #E5E5E7)",
                           }}
                           {...errorFocusProps(validationErrors[`item_${index}_quantity`])}
                         />
-                        {validationErrors[`item_${index}_quantity`] && (
-                          <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
-                            {validationErrors[`item_${index}_quantity`]}
-                          </p>
-                        )}
                       </div>
 
-                      <div>
-                        <label style={labelStyle}>Unit Type</label>
+                      {/* Unit */}
+                      <div style={{ flex: "1 1 100px", minWidth: "100px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Unit</label>
                         <select
                           value={item.unitType}
                           onChange={(e) => handleItemChange(index, "unitType", e.target.value)}
-                          style={inputStyle}
+                          style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
                           {...focusProps}
                         >
                           {unitTypes.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </div>
 
-                      <div>
-                        <label style={labelStyle}>Pricing Type</label>
+                      {/* Pricing Type */}
+                      <div style={{ flex: "1 1 120px", minWidth: "120px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pricing Type</label>
                         <select
                           value={item.pricingType}
                           onChange={(e) => handleItemChange(index, "pricingType", e.target.value)}
-                          style={inputStyle}
+                          style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
                           {...focusProps}
                         >
                           {pricingTypes.map((p) => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </div>
 
-                      {item.pricingType !== "tiered" && (
-                        <div>
-                          <label style={labelStyle}>Base Rate (₹) <span style={{ color: "red" }}>*</span></label>
+                      {/* HSN Code (Opt) */}
+                      <div style={{ flex: "1 1 100px", minWidth: "100px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>HSN/SAC <span style={{ fontWeight: 400, textTransform: "none" }}>(opt)</span></label>
+                        <input
+                          placeholder="-"
+                          value={item.hsnCode || ""}
+                          onChange={(e) => handleItemChange(index, "hsnCode", e.target.value)}
+                          style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
+                          {...focusProps}
+                        />
+                      </div>
+
+                      {/* Base Rate */}
+                      {item.pricingType !== "tiered" ? (
+                        <div style={{ flex: "1 1 110px", minWidth: "110px" }}>
+                          <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Rate (₹) <span style={{ color: "#DC2626" }}>*</span></label>
                           <input
                             type="number"
+                            placeholder="0.00"
                             value={item.baseRate}
                             onChange={(e) => handleItemChange(index, "baseRate", +e.target.value)}
                             style={{
                               ...inputStyle,
+                              marginTop: 0,
+                              padding: "10px 14px",
+                              height: "42px",
+                              textAlign: "right",
                               borderColor: validationErrors[`item_${index}_baseRate`] ? "#DC2626" : "var(--border, #E5E5E7)",
                             }}
                             {...errorFocusProps(validationErrors[`item_${index}_baseRate`])}
                           />
-                          {validationErrors[`item_${index}_baseRate`] && (
-                            <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
-                              {validationErrors[`item_${index}_baseRate`]}
-                            </p>
-                          )}
+                        </div>
+                      ) : (
+                        <div style={{ flex: "1 1 110px", minWidth: "110px", textAlign: "right", color: "var(--text-secondary)", fontSize: "14px", alignSelf: "center", paddingBottom: "10px" }}>
+                          Tiered
                         </div>
                       )}
 
-                      <div>
-                        <label style={labelStyle}>HSN / SAC Code</label>
-                        <input
-                          placeholder="Optional"
-                          value={item.hsnCode || ""}
-                          onChange={(e) => handleItemChange(index, "hsnCode", e.target.value)}
-                          style={inputStyle}
-                          {...focusProps}
-                        />
+                      {/* Item Total Display */}
+                      <div style={{ flex: "1 1 120px", minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Item Total</label>
+                        <div style={{ 
+                          height: "42px", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          padding: "0 14px", 
+                          background: "var(--bg-page, #F7F7F8)", 
+                          borderRadius: "12px", 
+                          border: "1px solid transparent",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "var(--text-primary)",
+                          fontVariantNumeric: "tabular-nums",
+                          width: "100%",
+                          justifyContent: "flex-end"
+                        }}>
+                          ₹{(Itemtotals[index]?.subtotal || 0).toFixed(2)}
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Mobile Remove Button Row */}
+                    {formData.items.length > 1 && (
+                      <div className="flex md:hidden justify-end pt-2">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "6px", color: "#DC2626", background: "transparent", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 500, padding: "6px 10px", borderRadius: "8px", transition: "all 150ms ease"
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          <Trash2 className="h-4 w-4" /> <span>Remove Item</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Validation errors for inline row */}
+                    {(validationErrors[`item_${index}_description`] || validationErrors[`item_${index}_quantity`] || validationErrors[`item_${index}_baseRate`]) && (
+                      <div style={{ color: "#DC2626", fontSize: "12px", marginTop: "-4px", paddingLeft: "4px" }}>
+                        Please ensure description, valid quantity, and rate are provided.
+                      </div>
+                    )}
 
                     {/* Tiered Pricing Config inside Item */}
                     {item.pricingType === "tiered" && (
-                      <div style={{ marginTop: "16px", padding: "20px", background: "var(--bg-page, #F7F7F8)", borderRadius: "16px", border: "1px solid var(--border-light, #F0F0F2)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                          <h4 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>Tiered Rates</h4>
+                      <div style={{ marginTop: "8px", padding: "16px", background: "var(--bg-page, #F7F7F8)", borderRadius: "12px", border: "1px solid var(--border-light, #F0F0F2)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>Tiered Rates</h4>
                           <button
                             type="button"
                             onClick={() => addTier(index)}
-                            style={{ ...btnSecondary, padding: "6px 12px", fontSize: "12px" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover, #F0F0F2)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface-secondary, #FBFBFD)"; }}
+                            style={{ ...btnSecondary, padding: "4px 10px", fontSize: "12px", borderRadius: "8px" }}
                           >
                             <Plus className="h-3 w-3 mr-1" /> Add Tier
                           </button>
                         </div>
                         
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                           {item.pricingTiers.map((tier, tIndex) => (
-                            <div key={tIndex} style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap", background: "#fff", padding: "12px", borderRadius: "12px", border: "1px solid var(--border, #E5E5E7)" }}>
-                              <div style={{ flex: 1, minWidth: "80px" }}>
-                                <label style={{ ...labelStyle, fontSize: "11px", marginBottom: "4px" }}>Min Qty</label>
-                                <input type="number" value={tier.minValue} onChange={(e) => handleTierChange(index, tIndex, "minValue", +e.target.value)} style={{ ...inputStyle, padding: "8px 12px" }} {...focusProps} />
+                            <div key={tIndex} className="flex flex-wrap sm:flex-nowrap gap-2 items-center" style={{ background: "#fff", padding: "8px", borderRadius: "8px", border: "1px solid var(--border, #E5E5E7)" }}>
+                              <div style={{ flex: 1, minWidth: "70px" }}>
+                                <input type="number" placeholder="Min Qty" value={tier.minValue} onChange={(e) => handleTierChange(index, tIndex, "minValue", +e.target.value)} style={{ ...inputStyle, marginTop: 0, padding: "6px 10px", fontSize: "12px" }} {...focusProps} />
+                              </div>
+                              <span style={{ color: "var(--text-tertiary)" }}>-</span>
+                              <div style={{ flex: 1, minWidth: "70px" }}>
+                                <input type="number" value={tier.maxValue ?? ""} onChange={(e) => handleTierChange(index, tIndex, "maxValue", e.target.value)} placeholder="Max (∞)" style={{ ...inputStyle, marginTop: 0, padding: "6px 10px", fontSize: "12px" }} {...focusProps} />
                               </div>
                               <div style={{ flex: 1, minWidth: "80px" }}>
-                                <label style={{ ...labelStyle, fontSize: "11px", marginBottom: "4px" }}>Max Qty</label>
-                                <input type="number" value={tier.maxValue ?? ""} onChange={(e) => handleTierChange(index, tIndex, "maxValue", e.target.value)} placeholder="∞" style={{ ...inputStyle, padding: "8px 12px" }} {...focusProps} />
+                                <input type="number" placeholder="Rate ₹" value={tier.rate} onChange={(e) => handleTierChange(index, tIndex, "rate", +e.target.value)} style={{ ...inputStyle, marginTop: 0, padding: "6px 10px", fontSize: "12px" }} {...focusProps} />
                               </div>
-                              <div style={{ flex: 1, minWidth: "100px" }}>
-                                <label style={{ ...labelStyle, fontSize: "11px", marginBottom: "4px" }}>Rate (₹)</label>
-                                <input type="number" value={tier.rate} onChange={(e) => handleTierChange(index, tIndex, "rate", +e.target.value)} style={{ ...inputStyle, padding: "8px 12px" }} {...focusProps} />
-                              </div>
-                              <div style={{ flex: 1, minWidth: "110px" }}>
-                                <label style={{ ...labelStyle, fontSize: "11px", marginBottom: "4px" }}>Rate Type</label>
-                                <select value={tier.rateType || "slabRate"} onChange={(e) => handleTierChange(index, tIndex, "rateType", e.target.value)} style={{ ...inputStyle, padding: "8px 12px" }} {...focusProps}>
+                              <div style={{ flex: 1, minWidth: "90px" }}>
+                                <select value={tier.rateType || "slabRate"} onChange={(e) => handleTierChange(index, tIndex, "rateType", e.target.value)} style={{ ...inputStyle, marginTop: 0, padding: "6px 10px", fontSize: "12px" }} {...focusProps}>
                                   <option value="slabRate">Slab Rate</option>
                                   <option value="unitRate">Unit Rate</option>
                                 </select>
@@ -863,31 +1052,14 @@ const CreateInvoice = () => {
                                 type="button"
                                 onClick={() => deleteTier(index, tIndex)}
                                 style={{
-                                  background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626", padding: "8px", borderRadius: "8px", cursor: "pointer", height: "39px", width: "39px", display: "flex", alignItems: "center", justifyContent: "center"
+                                  background: "#FEF2F2", border: "none", color: "#DC2626", borderRadius: "6px", cursor: "pointer", height: "30px", width: "30px", display: "flex", alignItems: "center", justifyContent: "center"
                                 }}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Delete Item Button */}
-                    {formData.items.length > 1 && (
-                      <div className="flex justify-end mt-2 pt-4 border-t border-gray-100">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: "6px", color: "#DC2626", background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: 500, padding: "8px 12px", borderRadius: "8px", transition: "all 150ms ease"
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          <Trash2 className="h-4 w-4" /> Remove Item
-                        </button>
                       </div>
                     )}
                   </div>

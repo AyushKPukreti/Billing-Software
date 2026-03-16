@@ -112,6 +112,16 @@ const invoiceSchema = new mongoose.Schema(
 
     items: [invoiceItemSchema],
 
+    bankDetails: {
+      accountHolderName: String,
+      bankName: String,
+      branchName: String,
+      accountNumber: String,
+      ifscCode: String,
+      upiId: String,
+      accountType: String,
+    },
+
     // Totals
     subtotal: { type: Number, required: true, min: 0 },
 

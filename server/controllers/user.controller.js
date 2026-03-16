@@ -1,6 +1,7 @@
 import { generateTokenAndSetCookie } from "../lib/utils/generateToken.js";
 import ClientModel from "../models/client.model.js";
 import UserModel from "../models/user.model.js";
+import InvoiceModel from "../models/invoice.model.js";
 
 export const registerUser = async (req, res, next) => {
   try {
@@ -139,7 +140,8 @@ export const editUserProfile = async (req, res) => {
       address,
       taxId,
       businessType,
-      udyamNo
+      udyamNo,
+      invoicePreferences
     } = req.body;
 
     const user = await UserModel.findById(userId);
@@ -215,6 +217,14 @@ export const editUserProfile = async (req, res) => {
       if (state?.trim()) user.address.state = state.trim();
       if (zipCode?.trim()) user.address.zipCode = zipCode.trim();
       if (country?.trim()) user.address.country = country.trim();
+    }
+
+    // === Invoice Preferences Update ===
+    if (invoicePreferences && typeof invoicePreferences === "object") {
+      const { prefix, suffix } = invoicePreferences;
+      if (!user.invoicePreferences) user.invoicePreferences = {};
+      if (prefix !== undefined) user.invoicePreferences.prefix = prefix.trim();
+      if (suffix !== undefined) user.invoicePreferences.suffix = suffix.trim();
     }
 
     // === Password Update ===
@@ -575,6 +585,251 @@ export const deleteBankDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in deleteBankDetails:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const getClientLedger = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { clientId } = req.params;
+
+    if (!clientId) {
+      return res.status(400).json({ message: "Client ID is required" });
+    }
+
+    const client = await ClientModel.findOne({ _id: clientId, user: userId });
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    const invoices = await InvoiceModel.find({ client: clientId, user: userId })
+      .populate("items.service") 
+      .sort({ invoiceDate: 1 });
+
+    let ledgerEntries = [];
+
+    invoices.forEach((inv) => {
+      // 1. Add the Invoice as a Debit
+      let description = "Invoice Generated";
+      if (inv.items && inv.items.length > 0) {
+        const itemNames = inv.items.map(i => i.description || (i.service && i.service.name) || "Item").join(", ");
+        description = `Invoice for: ${itemNames}`;
+      }
+
+      ledgerEntries.push({
+        date: inv.invoiceDate,
+        type: "Invoice Generated",
+        description: description,
+        reference: inv.invoiceNumber,
+        debit: inv.totalAmount,
+        credit: 0,
+        invoiceId: inv._id
+      });
+
+      // 2. Add each payment as a Credit
+      if (inv.paymentHistory && inv.paymentHistory.length > 0) {
+        inv.paymentHistory.forEach(payment => {
+          ledgerEntries.push({
+            date: payment.paymentDate,
+            type: "Payment Received",
+            description: payment.notes || `Payment for Invoice ${inv.invoiceNumber}`,
+            reference: payment.paymentMode,
+            debit: 0,
+            credit: payment.amountPaid,
+            invoiceId: inv._id,
+            paymentId: payment._id
+          });
+        });
+      }
+    });
+
+    // Sort all entries chronologically by Date
+    ledgerEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Calculate running balance
+    let runningBalance = 0;
+    const finalizedLedger = ledgerEntries.map(entry => {
+      runningBalance += entry.debit;
+      runningBalance -= entry.credit;
+      return {
+        ...entry,
+        balance: runningBalance
+      };
+    });
+
+    res.status(200).json({
+      message: "Ledger fetched successfully",
+      ledger: finalizedLedger,
+      client: {
+         name: client.companyName,
+         email: client.email,
+         phone: client.phone
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching client ledger:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// --- Bank Accounts (Multiple) ---
+
+export const getBankAccounts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await UserModel.findById(userId).select("bankAccounts");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ bankAccounts: user.bankAccounts || [] });
+  } catch (error) {
+    console.error("Error fetching bank accounts:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const addBankAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { accountHolderName, bankName, branchName, accountNumber, ifscCode, accountType, upiId, isPrimary } = req.body;
+
+    if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
+      return res.status(400).json({ message: "Bank name, account number, account holder name, and IFSC code are required" });
+    }
+
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    if (!ifscRegex.test(ifscCode.toUpperCase())) {
+      return res.status(400).json({ message: "Invalid IFSC code format" });
+    }
+
+    if (!/^\d{9,18}$/.test(accountNumber.replace(/\s/g, ""))) {
+      return res.status(400).json({ message: "Account number must be between 9-18 digits" });
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isFirstAccount = (user.bankAccounts || []).length === 0;
+    const shouldBePrimary = isFirstAccount || isPrimary === true;
+
+    if (shouldBePrimary && user.bankAccounts && user.bankAccounts.length > 0) {
+      user.bankAccounts.forEach(acc => { acc.isPrimary = false; });
+    }
+
+    const newAccount = {
+      accountHolderName: accountHolderName.trim(),
+      bankName: bankName.trim(),
+      branchName: branchName?.trim(),
+      accountNumber: accountNumber.replace(/\s/g, ""),
+      ifscCode: ifscCode.trim().toUpperCase(),
+      accountType: accountType || "savings",
+      upiId: upiId?.trim(),
+      isPrimary: shouldBePrimary,
+    };
+
+    if (!user.bankAccounts) user.bankAccounts = [];
+    user.bankAccounts.push(newAccount);
+
+    await user.save();
+    
+    res.status(200).json({ message: "Bank account added successfully", bankAccount: user.bankAccounts[user.bankAccounts.length - 1], bankAccounts: user.bankAccounts });
+  } catch (error) {
+    console.error("Error adding bank account:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const updateBankAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const accountId = req.params.id;
+    const { accountHolderName, bankName, branchName, accountNumber, ifscCode, accountType, upiId } = req.body;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const bankAccount = user.bankAccounts.id(accountId);
+    if (!bankAccount) return res.status(404).json({ message: "Bank account not found" });
+
+    if (accountHolderName) bankAccount.accountHolderName = accountHolderName.trim();
+    if (bankName) bankAccount.bankName = bankName.trim();
+    if (branchName !== undefined) bankAccount.branchName = branchName?.trim();
+    if (accountNumber) {
+      if (!/^\d{9,18}$/.test(accountNumber.replace(/\s/g, ""))) {
+        return res.status(400).json({ message: "Account number must be between 9-18 digits" });
+      }
+      bankAccount.accountNumber = accountNumber.replace(/\s/g, "");
+    }
+    if (ifscCode) {
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscRegex.test(ifscCode.toUpperCase())) {
+        return res.status(400).json({ message: "Invalid IFSC code format" });
+      }
+      bankAccount.ifscCode = ifscCode.trim().toUpperCase();
+    }
+    if (accountType) bankAccount.accountType = accountType;
+    if (upiId !== undefined) bankAccount.upiId = upiId?.trim();
+
+    await user.save();
+    res.status(200).json({ message: "Bank account updated successfully", bankAccount, bankAccounts: user.bankAccounts });
+  } catch (error) {
+    console.error("Error updating bank account:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const deleteBankAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const accountId = req.params.id;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const bankAccount = user.bankAccounts.id(accountId);
+    if (!bankAccount) return res.status(404).json({ message: "Bank account not found" });
+
+    const wasPrimary = bankAccount.isPrimary;
+
+    user.bankAccounts.pull(accountId);
+
+    if (wasPrimary && user.bankAccounts.length > 0) {
+      user.bankAccounts[0].isPrimary = true;
+    }
+
+    await user.save();
+    res.status(200).json({ message: "Bank account deleted successfully", bankAccounts: user.bankAccounts });
+  } catch (error) {
+    console.error("Error deleting bank account:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const setPrimaryBankAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const accountId = req.params.id;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let found = false;
+    user.bankAccounts.forEach((acc) => {
+      if (acc._id.toString() === accountId) {
+        acc.isPrimary = true;
+        found = true;
+      } else {
+        acc.isPrimary = false;
+      }
+    });
+
+    if (!found) return res.status(404).json({ message: "Bank account not found" });
+
+    await user.save();
+    res.status(200).json({ message: "Primary bank account set", bankAccounts: user.bankAccounts });
+  } catch (error) {
+    console.error("Error setting primary bank account:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

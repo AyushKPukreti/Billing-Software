@@ -303,7 +303,7 @@ const AppleDataTable = ({
                       <td
                         key={col.key}
                         className={`adt-td ${col.align === 'right' ? 'adt-td--right' : ''}`}
-                        style={{ width: col.width || 'auto' }}
+                        style={{ width: col.width || 'auto', textAlign: col.align || 'left' }}
                       >
                         {col.render ? col.render(row, rowIndex) : row[col.key]}
                       </td>
