@@ -265,7 +265,7 @@ const Template2PDF = ({ invoiceData, currentUser, numberToWords, copyType }) => 
                 {item.pricingType === "tiered"
                   ? item.pricingTiers?.map(
                       (t) =>
-                        `${t.minValue}–${t.maxValue !== null ? t.maxValue : "Above"} ${item.unitType}: ¥${t.rate}`
+                        `${t.minValue}–${t.maxValue !== null ? t.maxValue : "Above"} ${item.unitType}: ₹${t.rate}`
                     ).join("\n")
                   : `₹${(item.baseRate || 0).toFixed(2)}`}
               </Text>

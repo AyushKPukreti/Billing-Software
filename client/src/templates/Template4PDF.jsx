@@ -13,6 +13,7 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica",
     fontSize: 9,
     padding: 30,
+    paddingTop: "65mm",
     color: "#000",
     backgroundColor: "#fff",
     lineHeight: 1.4,
@@ -245,7 +246,7 @@ const Template4PDF = ({ invoiceData, currentUser, numberToWords }) => {
                   ? item.pricingTiers?.map(
                       (t, i) => (
                         <Text key={i} style={{ marginBottom: 2 }}>
-                          {t.minValue} – {t.maxValue !== null ? t.maxValue : "Above"} {item.unitType}: ¥{t.rate} {t.rateType === "unitRate" ? `/ ${item.unitType}` : "(slab)"}
+                          {t.minValue} – {t.maxValue !== null ? t.maxValue : "Above"} {item.unitType}: ₹{t.rate} {t.rateType === "unitRate" ? `/ ${item.unitType}` : "(slab)"}
                         </Text>
                       )
                     )

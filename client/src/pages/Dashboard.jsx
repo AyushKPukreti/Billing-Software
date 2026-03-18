@@ -16,35 +16,79 @@ import {
 import axios from "axios";
 import { UserContext } from "../context/userContext";
 import UnifiedChart from "../components/UnifiedChart";
+import SummaryPie from "../components/SummaryPie";
+import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
+import { tokens } from "../components/tokens";
 
-export const tokens = {
-  colors: {
-    bgCanvas: "#F7F7F8",
-    bgSurface: "#FFFFFF",
-    borderLight: "#E6E7EA",
-    textPrimary: "#0F1724",
-    textSecondary: "#6B7280",
-    accent: "#0071E3",
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
-  },
-  shadows: {
-    soft: "0 4px 12px rgba(16,24,40,0.06)",
-    hover: "0 8px 24px rgba(16,24,40,0.08)",
-  },
-  radii: {
-    card: "12px",
-    pill: "9999px",
-  },
-  spacing: {
-    xs: "4px",
-    sm: "8px",
-    md: "16px",
-    lg: "24px",
-    xl: "32px",
-    xxl: "48px",
+const calculateSparklineData = (invoices, metricType) => {
+  const now = new Date();
+  const result = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    result.push({
+      monthYear: `${d.getFullYear()}-${d.getMonth()}`,
+      value: 0
+    });
   }
+
+  invoices.forEach(inv => {
+    const invDate = new Date(inv.invoiceDate);
+    const key = `${invDate.getFullYear()}-${invDate.getMonth()}`;
+    const bucket = result.find(r => r.monthYear === key);
+    if (bucket) {
+      if (metricType === 'totalInvoices') bucket.value += 1;
+      else if (metricType === 'totalRevenue') {
+        if (inv.status === 'paid') bucket.value += inv.totalAmount;
+        else if (inv.status === 'partial') bucket.value += inv.amountPaid;
+      }
+      else if (metricType === 'amountDue') {
+        if (inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'partial') bucket.value += inv.amountDue;
+      }
+      else if (metricType === 'sentInvoices' && inv.status === 'sent') bucket.value += 1;
+      else if (metricType === 'overdueInvoices' && inv.status === 'overdue') bucket.value += 1;
+      else if (metricType === 'partialPayments' && inv.status === 'partial') bucket.value += 1;
+      else if (metricType === 'draftInvoices' && inv.status === 'draft') bucket.value += 1;
+    }
+  });
+  
+  return result;
+};
+
+const Sparkline = ({ data, color }) => {
+  if (!data || data.length === 0) return <div style={{height: "60px", marginTop: "16px"}} />;
+  const max = Math.max(...data.map(d => d.value));
+  const min = Math.min(...data.map(d => d.value));
+  const allZero = max === 0 && min === 0;
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.95)', border: `1px solid ${tokens.colors.borderLight}`, padding: "4px 8px", borderRadius: "6px", fontSize: "12px", color: tokens.colors.textPrimary, boxShadow: tokens.shadows.soft }}>
+          {payload[0].payload.monthYear}: <b>{payload[0].value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</b>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div style={{ height: "60px", width: "100%", marginTop: "16px" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 5, bottom: 5, left: 0, right: 0}}>
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: tokens.colors.borderLight, strokeWidth: 1, strokeDasharray: "3 3" }} />
+          <Line 
+            type="monotone" 
+            dataKey="value" 
+            stroke={allZero ? tokens.colors.borderLight : color} 
+            strokeWidth={2} 
+            dot={false}
+            activeDot={{ r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
 };
 
 const Dashboard = () => {
@@ -70,6 +114,7 @@ const Dashboard = () => {
     overdueInvoices: 0,
     draftInvoices: 0,
     totalAmountDue: 0,
+    sparklines: {},
   });
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +170,15 @@ const Dashboard = () => {
         overdueInvoices,
         draftInvoices,
         totalAmountDue,
+        sparklines: {
+          totalInvoices: calculateSparklineData(invoices, 'totalInvoices'),
+          totalRevenue: calculateSparklineData(invoices, 'totalRevenue'),
+          amountDue: calculateSparklineData(invoices, 'amountDue'),
+          sentInvoices: calculateSparklineData(invoices, 'sentInvoices'),
+          overdueInvoices: calculateSparklineData(invoices, 'overdueInvoices'),
+          partialPayments: calculateSparklineData(invoices, 'partialPayments'),
+          draftInvoices: calculateSparklineData(invoices, 'draftInvoices'),
+        }
       });
 
       // Show recent invoices (all statuses except draft)
@@ -159,6 +213,7 @@ const Dashboard = () => {
       accentText: tokens.colors.accent,
       accentBg: "#EFF6FF",
       link: "/clients",
+      sparklineData: null,
     },
     {
       title: "Total Invoices",
@@ -167,6 +222,7 @@ const Dashboard = () => {
       accentText: tokens.colors.success,
       accentBg: "#ECFDF5",
       link: "/invoices",
+      sparklineData: stats.sparklines.totalInvoices,
     },
     {
       title: "Total Revenue",
@@ -175,6 +231,7 @@ const Dashboard = () => {
       accentText: tokens.colors.warning,
       accentBg: "#FFFBEB",
       link: "/invoices",
+      sparklineData: stats.sparklines.totalRevenue,
     },
     {
       title: "Amount Due",
@@ -183,6 +240,7 @@ const Dashboard = () => {
       accentText: tokens.colors.danger,
       accentBg: "#FEF2F2",
       link: "/invoices",
+      sparklineData: stats.sparklines.amountDue,
     },
     {
       title: "Sent Invoices",
@@ -191,6 +249,7 @@ const Dashboard = () => {
       accentText: "#6366F1", // Indigo
       accentBg: "#EEF2FF",
       link: "/invoices",
+      sparklineData: stats.sparklines.sentInvoices,
     },
     {
       title: "Overdue",
@@ -199,6 +258,7 @@ const Dashboard = () => {
       accentText: tokens.colors.danger,
       accentBg: "#FEF2F2",
       link: "/invoices",
+      sparklineData: stats.sparklines.overdueInvoices,
     },
     {
       title: "Partial",
@@ -207,6 +267,7 @@ const Dashboard = () => {
       accentText: "#EA580C", // Orange
       accentBg: "#FFF7ED",
       link: "/invoices",
+      sparklineData: stats.sparklines.partialPayments,
     },
     {
       title: "Drafts",
@@ -215,6 +276,7 @@ const Dashboard = () => {
       accentText: tokens.colors.textSecondary,
       accentBg: "#F3F4F6",
       link: "/invoices",
+      sparklineData: stats.sparklines.draftInvoices,
     },
   ];
 
@@ -324,29 +386,36 @@ const Dashboard = () => {
                 }}
                 tabIndex={0}
               >
-                <div
-                  className="hidden sm:flex"
-                  style={{
-                    backgroundColor: card.accentBg,
-                    color: card.accentText,
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "50%",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: tokens.spacing.md,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon className="h-6 w-6" />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: "13px", fontWeight: "500", color: tokens.colors.textSecondary, marginBottom: "4px" }} className="truncate">
-                    {card.title}
-                  </p>
-                  <p style={{ fontSize: "24px", fontWeight: "600", color: tokens.colors.textPrimary, lineHeight: "1.2" }} className="truncate">
-                    {card.value}
-                  </p>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: "13px", fontWeight: "500", color: tokens.colors.textSecondary, marginBottom: "4px" }} className="truncate">
+                        {card.title}
+                      </p>
+                      <p style={{ fontSize: "24px", fontWeight: "600", color: tokens.colors.textPrimary, lineHeight: "1.2" }} className="truncate">
+                        {card.value}
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        backgroundColor: card.accentBg,
+                        color: card.accentText,
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        marginLeft: tokens.spacing.sm,
+                      }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                  {card.sparklineData && (
+                    <Sparkline data={card.sparklineData} color={card.accentText} />
+                  )}
                 </div>
               </Link>
             );
@@ -364,10 +433,10 @@ const Dashboard = () => {
               padding: tokens.spacing.lg,
             }}
           >
-            <UnifiedChart data={invoiceData} tokens={tokens} />
+            <UnifiedChart data={invoiceData} />
             <div style={{ marginTop: tokens.spacing.md, backgroundColor: "#EEF2FF", borderRadius: "8px", padding: "12px 16px" }}>
               <p style={{ fontSize: "13px", color: tokens.colors.accent, margin: 0 }}>
-                💡 <strong>Insight:</strong> Showing your billing trends over time. Switch to Revenue view to track collections.
+                💡 <strong>Insight:</strong> Manage your billing trends. Use the controls above to explore ranges and data views.
               </p>
             </div>
           </div>
@@ -500,6 +569,23 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Right Column Content */}
+          <div>
+            <div style={{ marginBottom: tokens.spacing.xl }}>
+              <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
+                Snapshot Summary
+              </h2>
+              <div style={{
+                backgroundColor: tokens.colors.bgSurface,
+                borderRadius: tokens.radii.card,
+                border: `1px solid ${tokens.colors.borderLight}`,
+                boxShadow: tokens.shadows.soft,
+                padding: tokens.spacing.lg,
+              }}>
+                <SummaryPie data={invoiceData} />
+              </div>
+            </div>
+
           {/* Business Types Panel */}
           <div>
             <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
@@ -538,6 +624,7 @@ const Dashboard = () => {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
       </div>

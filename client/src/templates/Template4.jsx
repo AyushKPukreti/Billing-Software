@@ -12,7 +12,7 @@ const Template4 = ({ invoiceData, ref, numberToWords }) => {
 
   return (
     <div
-      className="w-full font-sans"
+      className="w-full font-sans print:mt-[35mm]"
       style={{ 
         padding: "20px",
         backgroundColor: "#FFFFFF", 

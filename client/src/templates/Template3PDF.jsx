@@ -39,7 +39,7 @@ const s = StyleSheet.create({
     fontSize: 24,
     fontFamily: "Helvetica-Bold",
     color: "#8B0000",
-    marginBottom: 4,
+    marginBottom: 10,
     letterSpacing: 0.5,
   },
   companyDetails: {
@@ -305,7 +305,7 @@ const Template3PDF = ({ invoiceData, currentUser, numberToWords }) => {
                             (t, i) => (
                               <Text key={i} style={{ marginBottom: 2 }}>
                                 {t.minValue} – {t.maxValue !== null ? t.maxValue : "Above"}{" "}
-                                {item.unitType}: ¥{t.rate}{" "}
+                                {item.unitType}: ₹{t.rate}{" "}
                                 {t.rateType === "unitRate" ? `/ ${item.unitType}` : "(slab)"}
                               </Text>
                             )
