@@ -347,10 +347,10 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
           </View>
 
           <View style={s.sigBox}>
-            <Text style={[s.bold, { fontSize: 10, marginBottom: signatureBase64 ? 10 : 35 }]}>
+            <Text style={[s.bold, { fontSize: 10, marginBottom: signatureBase64 && invoiceData.includeSignature !== false ? 10 : 35 }]}>
               For {currentUser?.businessName || "Your Company Name"}
             </Text>
-            {signatureBase64 && (
+            {signatureBase64 && invoiceData.includeSignature !== false && (
               <Image 
                 src={signatureBase64} 
                 style={{ width: 100, height: 35, objectFit: "contain", alignSelf: "flex-end", marginBottom: 10 }} 

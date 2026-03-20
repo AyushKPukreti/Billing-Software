@@ -354,8 +354,8 @@ const Template4PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
             )}
           </View>
           <View style={s.sigBox}>
-            <Text style={[s.sigFor, signatureBase64 ? { marginBottom: 10 } : {}]}>For {currentUser?.businessName || ""}</Text>
-            {signatureBase64 && (
+            <Text style={[s.sigFor, (signatureBase64 && invoiceData.includeSignature !== false) ? { marginBottom: 10 } : {}]}>For {currentUser?.businessName || ""}</Text>
+            {signatureBase64 && invoiceData.includeSignature !== false && (
               <Image 
                 src={signatureBase64} 
                 style={{ width: 100, height: 40, objectFit: "contain", alignSelf: "center", marginBottom: 10 }} 

@@ -47,7 +47,7 @@ const Template1 = forwardRef(({ invoiceData, numberToWords, copyType }, ref) => 
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-          {currentUser.logoUrl && (
+          {currentUser.logoUrl && invoiceData.includeLogo !== false && (
             <img
               src={currentUser.logoUrl}
               alt="Logo"

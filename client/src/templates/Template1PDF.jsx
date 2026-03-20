@@ -234,7 +234,7 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
         {/* ═══ HEADER ═══ */}
         {/* When a logo is available: left-align row so logo sits left of company info.
             When no logo: keep the centered layout unchanged. */}
-        {logoBase64 ? (
+        {(logoBase64 && invoiceData.includeLogo !== false) ? (
           <View style={s.headerRowWithLogo}>
             <View style={s.logoContainer}>
               <Image
@@ -598,10 +598,10 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
           )}
 
           <View style={s.sigBox}>
-            <Text style={[s.sigLabel, signatureBase64 ? { marginBottom: 10 } : {}]}>
+            <Text style={[s.sigLabel, (signatureBase64 && invoiceData.includeSignature !== false) ? { marginBottom: 10 } : {}]}>
               for {currentUser?.businessName || ""}
             </Text>
-            {signatureBase64 && (
+            {signatureBase64 && invoiceData.includeSignature !== false && (
               <Image 
                 src={signatureBase64} 
                 style={{ width: 100, height: 40, objectFit: "contain", alignSelf: "flex-end", marginBottom: 10 }} 

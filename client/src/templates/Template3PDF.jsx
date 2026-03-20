@@ -225,7 +225,7 @@ const Template3PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
           {/* Header */}
           <View style={s.headerWrap} fixed>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              {logoBase64 ? (
+              {(logoBase64 && invoiceData.includeLogo !== false) ? (
                 <Image
                   src={logoBase64}
                   style={{ width: 56, height: 40, maxWidth: 56, maxHeight: 40, marginRight: 8 }}
@@ -430,8 +430,8 @@ const Template3PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
               </View>
 
               <View style={s.sigBox}>
-                <Text style={[s.sigFor, signatureBase64 ? { marginBottom: 10 } : {}]}>For {currentUser?.businessName || ""}</Text>
-                {signatureBase64 && (
+                <Text style={[s.sigFor, (signatureBase64 && invoiceData.includeSignature !== false) ? { marginBottom: 10 } : {}]}>For {currentUser?.businessName || ""}</Text>
+                {signatureBase64 && invoiceData.includeSignature !== false && (
                   <Image 
                     src={signatureBase64} 
                     style={{ width: 100, height: 35, maxWidth: 100, maxHeight: 35, alignSelf: "flex-end", marginBottom: 10 }} 

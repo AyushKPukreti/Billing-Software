@@ -44,6 +44,8 @@ const EditInvoice = () => {
     dueDate: "",
     status: "draft",
     bankDetails: null,
+    includeLogo: true,
+    includeSignature: true,
   });
 
   useEffect(() => {
@@ -107,6 +109,8 @@ const EditInvoice = () => {
         dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split("T")[0] : "",
         status: invoice.status || "draft",
         bankDetails: invoice.bankDetails || null,
+        includeLogo: invoice.includeLogo !== false,
+        includeSignature: invoice.includeSignature !== false,
       });
     } catch (error) {
       toast.error("Failed to fetch invoice details");
@@ -1113,7 +1117,76 @@ const EditInvoice = () => {
             </div>
           </div>
 
-          <div style={{ ...cardStyle, background: "var(--surface-secondary, #FBFBFD)", border: "none" }}>
+          <div style={{ ...cardStyle, flex: 1 }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px" }}>Display Preferences</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", userSelect: "none" }}>
+                <div style={{
+                  position: "relative",
+                  width: "44px",
+                  height: "24px",
+                  background: formData.includeLogo ? "var(--accent, #34C759)" : "var(--border, #E5E5E7)",
+                  borderRadius: "12px",
+                  transition: "background 0.3s ease",
+                }}>
+                  <div style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: formData.includeLogo ? "22px" : "2px",
+                    width: "20px",
+                    height: "20px",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    transition: "left 0.3s cubic-bezier(0.2, 0.85, 0.32, 1.2)",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  }} />
+                </div>
+                <input
+                  type="checkbox"
+                  name="includeLogo"
+                  checked={formData.includeLogo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  style={{ display: "none" }}
+                />
+                <span style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-primary)" }}>Include Logo</span>
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", userSelect: "none" }}>
+                <div style={{
+                  position: "relative",
+                  width: "44px",
+                  height: "24px",
+                  background: formData.includeSignature ? "var(--accent, #34C759)" : "var(--border, #E5E5E7)",
+                  borderRadius: "12px",
+                  transition: "background 0.3s ease",
+                }}>
+                  <div style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: formData.includeSignature ? "22px" : "2px",
+                    width: "20px",
+                    height: "20px",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    transition: "left 0.3s cubic-bezier(0.2, 0.85, 0.32, 1.2)",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  }} />
+                </div>
+                <input
+                  type="checkbox"
+                  name="includeSignature"
+                  checked={formData.includeSignature}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  style={{ display: "none" }}
+                />
+                <span style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-primary)" }}>Include Signature</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
+          <div style={{ ...cardStyle, background: "var(--surface-secondary, #FBFBFD)", border: "none", minWidth: "300px", width: "100%", maxWidth: "500px" }}>
             <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px" }}>Summary</h3>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

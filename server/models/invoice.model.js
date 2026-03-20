@@ -142,6 +142,9 @@ const invoiceSchema = new mongoose.Schema(
 
     paymentHistory: [paymentHistorySchema],
 
+    includeLogo: { type: Boolean, default: true },
+    includeSignature: { type: Boolean, default: true },
+
     totalTax: { type: Number, default: 0, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 },
 
