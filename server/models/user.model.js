@@ -124,6 +124,12 @@ const userSchema = new mongoose.Schema(
         isPrimary: { type: Boolean, default: false },
       }
     ],
+    customUnits: [
+      {
+        name: { type: String, required: true, trim: true },
+        shortCode: { type: String, trim: true, default: "" },
+      }
+    ],
     isActive: {
       type: Boolean,
       default: true,

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ChevronUp, ChevronDown, X } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import ItemLabel from "../components/ItemLabel";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const unitTypes = [
-  "km", "hour", "day", "month", "item", "kg", "piece", "service", "ton", "shift", "other",
+const DEFAULT_UNITS = [
+  "km", "hour", "day", "month", "item", "kg", "piece", "service", "ton", "shift",
 ];
 const pricingTypes = ["fixed", "flat", "tiered"];
 const discountTypes = ["percentage", "fixed"];
@@ -26,6 +26,12 @@ const CreateInvoice = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [collapsedItems, setCollapsedItems] = useState([]);
   const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "", addressBehavior: "billing_and_shipping" });
+  const [customUnits, setCustomUnits] = useState([]);
+  const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+  const [addUnitForIndex, setAddUnitForIndex] = useState(null);
+  const [newUnitName, setNewUnitName] = useState("");
+  const [newUnitShortCode, setNewUnitShortCode] = useState("");
+  const [addingUnit, setAddingUnit] = useState(false);
   const [isShippingDifferent, setIsShippingDifferent] = useState(false);
   
   const toggleCollapse = (index) => {
@@ -68,6 +74,7 @@ const CreateInvoice = () => {
     fetchServices();
     fetchBankAccounts();
     fetchProfile();
+    fetchCustomUnits();
 
     const today = new Date();
     const defaultDueDate = new Date();
@@ -130,6 +137,53 @@ const CreateInvoice = () => {
       }
     } catch {
       console.error("Failed to fetch profile");
+    }
+  };
+
+  const fetchCustomUnits = async () => {
+    try {
+      axios.defaults.withCredentials = true;
+      const res = await axios.get(`${BASE_URL}/users/custom-units`);
+      setCustomUnits(res.data.customUnits || []);
+    } catch {
+      console.error("Failed to fetch custom units");
+    }
+  };
+
+  const handleUnitChange = (index, value) => {
+    if (value === "__add_custom__") {
+      setAddUnitForIndex(index);
+      setNewUnitName("");
+      setNewUnitShortCode("");
+      setShowAddUnitModal(true);
+    } else {
+      handleItemChange(index, "unitType", value);
+    }
+  };
+
+  const handleAddCustomUnit = async () => {
+    const trimmed = newUnitName.trim();
+    if (!trimmed) {
+      toast.error("Unit name is required");
+      return;
+    }
+    setAddingUnit(true);
+    try {
+      const res = await axios.post(`${BASE_URL}/users/custom-units`, {
+        name: trimmed,
+        shortCode: newUnitShortCode.trim(),
+      });
+      setCustomUnits(res.data.customUnits);
+      // Select the newly added unit for the current item
+      if (addUnitForIndex !== null) {
+        handleItemChange(addUnitForIndex, "unitType", trimmed);
+      }
+      setShowAddUnitModal(false);
+      toast.success("Custom unit added!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add custom unit");
+    } finally {
+      setAddingUnit(false);
     }
   };
 
@@ -449,10 +503,6 @@ const CreateInvoice = () => {
           errors[`item_${index}_baseRate`] = "Base Rate is required";
           isValid = false;
         }
-        if (item.unitType === "other" && !item.customUnitType?.trim()) {
-          errors[`item_${index}_customUnit`] = "Custom unit is required";
-          isValid = false;
-        }
       });
     }
 
@@ -476,10 +526,6 @@ const CreateInvoice = () => {
       items: payload.items.map((item) => {
         const cleanedItem = { ...item };
         if (!cleanedItem.service) delete cleanedItem.service;
-        if (cleanedItem.unitType === "other" && cleanedItem.customUnitType?.trim()) {
-          cleanedItem.unitType = cleanedItem.customUnitType.trim();
-        }
-        delete cleanedItem.customUnitType;
         return cleanedItem;
       }),
     };
@@ -858,7 +904,7 @@ const CreateInvoice = () => {
                     </span>
                     {isCollapsed && item.quantity > 0 && (
                       <span style={{ fontSize: "13px", color: "var(--text-secondary, #6E6E73)", whiteSpace: "nowrap" }}>
-                        × {item.quantity} {item.unitType === "other" ? (item.customUnitType || "") : (item.unitType !== "item" ? item.unitType : "")}
+                        × {item.quantity} {item.unitType !== "item" ? item.unitType : ""}
                       </span>
                     )}
                   </div>
@@ -960,43 +1006,31 @@ const CreateInvoice = () => {
                       </div>
 
                       {/* Unit */}
-                      <div style={{ flex: "1 1 100px", minWidth: "100px" }}>
+                      <div style={{ flex: "1 1 140px", minWidth: "140px" }}>
                         <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Unit</label>
                         <select
-                          value={item.unitType}
-                          onChange={(e) => {
-                            handleItemChange(index, "unitType", e.target.value);
-                            if (e.target.value !== "other") handleItemChange(index, "customUnitType", "");
-                          }}
+                          value={DEFAULT_UNITS.includes(item.unitType) || customUnits.some(u => u.name === item.unitType) ? item.unitType : item.unitType}
+                          onChange={(e) => handleUnitChange(index, e.target.value)}
                           style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
                           {...focusProps}
                         >
-                          {unitTypes.map((u) => <option key={u} value={u}>{u}</option>)}
+                          <optgroup label="Default Units">
+                            {DEFAULT_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                          </optgroup>
+                          {customUnits.length > 0 && (
+                            <optgroup label="Custom Units">
+                              {customUnits.map((u) => <option key={u._id} value={u.name}>{u.name}{u.shortCode ? ` (${u.shortCode})` : ""}</option>)}
+                            </optgroup>
+                          )}
+                          <optgroup label="">
+                            <option value="__add_custom__">+ Add Custom Unit</option>
+                          </optgroup>
+                          {/* Show current value if it's a legacy unit not in any list */}
+                          {item.unitType && !DEFAULT_UNITS.includes(item.unitType) && !customUnits.some(u => u.name === item.unitType) && item.unitType !== "__add_custom__" && (
+                            <option value={item.unitType} hidden>{item.unitType}</option>
+                          )}
                         </select>
                       </div>
-
-                      {/* Custom Unit (shown when "other" selected) */}
-                      {item.unitType === "other" && (
-                        <div style={{ flex: "1 1 120px", minWidth: "120px", opacity: 1, transition: "opacity 200ms ease" }}>
-                          <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Custom Unit <span style={{ color: "#DC2626" }}>*</span></label>
-                          <input
-                            placeholder="e.g. hours, sessions, boxes"
-                            value={item.customUnitType || ""}
-                            onChange={(e) => handleItemChange(index, "customUnitType", e.target.value)}
-                            style={{
-                              ...inputStyle,
-                              marginTop: 0,
-                              padding: "10px 14px",
-                              height: "42px",
-                              borderColor: validationErrors[`item_${index}_customUnit`] ? "#DC2626" : "var(--border, #E5E5E7)",
-                            }}
-                            {...errorFocusProps(validationErrors[`item_${index}_customUnit`])}
-                          />
-                          {validationErrors[`item_${index}_customUnit`] && (
-                            <p style={{ color: "#DC2626", fontSize: "12px", marginTop: "4px" }}>{validationErrors[`item_${index}_customUnit`]}</p>
-                          )}
-                        </div>
-                      )}
 
                       {/* Pricing Type */}
                       <div style={{ flex: "1 1 120px", minWidth: "120px" }}>
@@ -1377,6 +1411,92 @@ const CreateInvoice = () => {
         </div>
 
       </form>
+
+      {/* Add Custom Unit Modal */}
+      {showAddUnitModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "24px",
+        }}
+          onClick={() => setShowAddUnitModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff", borderRadius: "20px",
+              boxShadow: "0 24px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)",
+              padding: "28px", width: "100%", maxWidth: "400px",
+              animation: "fadeInScale 200ms ease",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary, #1D1D1F)", letterSpacing: "-0.02em" }}>Add Custom Unit</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddUnitModal(false)}
+                style={{ background: "var(--surface-secondary, #F5F5F7)", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-secondary, #6E6E73)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                  Unit Name <span style={{ color: "#DC2626" }}>*</span>
+                </label>
+                <input
+                  value={newUnitName}
+                  onChange={(e) => setNewUnitName(e.target.value)}
+                  placeholder="e.g. litre, bundle, session"
+                  style={{ ...inputStyle, marginTop: 0 }}
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCustomUnit(); } }}
+                  {...focusProps}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                  Short Code <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
+                </label>
+                <input
+                  value={newUnitShortCode}
+                  onChange={(e) => setNewUnitShortCode(e.target.value)}
+                  placeholder="e.g. ltr, bdl, sess"
+                  style={{ ...inputStyle, marginTop: 0 }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCustomUnit(); } }}
+                  {...focusProps}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+              <button
+                type="button"
+                onClick={() => setShowAddUnitModal(false)}
+                style={{
+                  ...btnSecondary, flex: 1, padding: "12px",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomUnit}
+                disabled={addingUnit}
+                style={{
+                  ...btnPrimary, flex: 1, padding: "12px",
+                  opacity: addingUnit ? 0.6 : 1,
+                }}
+              >
+                {addingUnit ? "Saving..." : "Save Unit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
