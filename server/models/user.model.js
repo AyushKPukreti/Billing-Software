@@ -148,6 +148,11 @@ const userSchema = new mongoose.Schema(
         trim: true,
         default: "",
       },
+      addressBehavior: {
+        type: String,
+        enum: ["billing_only", "billing_and_shipping", "always_both"],
+        default: "billing_and_shipping",
+      },
     },
     logoUrl: { type: String, default: '' },
     signatureUrl: { type: String, default: '' },

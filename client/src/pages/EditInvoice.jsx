@@ -25,7 +25,8 @@ const EditInvoice = () => {
   const [totals, setTotals] = useState(0);
   const [validationErrors, setValidationErrors] = useState({});
   const [collapsedItems, setCollapsedItems] = useState([]);
-  const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "" });
+  const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "", addressBehavior: "billing_and_shipping" });
+  const [isShippingDifferent, setIsShippingDifferent] = useState(false);
   
   const toggleCollapse = (index) => {
     setCollapsedItems((prev) =>
@@ -105,6 +106,7 @@ const EditInvoice = () => {
         const prefs = {
           prefix: res.data.invoicePreferences.prefix || "",
           suffix: res.data.invoicePreferences.suffix || "",
+          addressBehavior: res.data.invoicePreferences.addressBehavior || "billing_and_shipping",
         };
         setInvoicePreferences(prefs);
         return prefs;
@@ -112,7 +114,7 @@ const EditInvoice = () => {
     } catch {
       console.error("Failed to fetch profile");
     }
-    return { prefix: "", suffix: "" };
+    return { prefix: "", suffix: "", addressBehavior: "billing_and_shipping" };
   };
 
   const fetchInvoice = async (prefs) => {
@@ -152,6 +154,10 @@ const EditInvoice = () => {
         includeLogo: invoice.includeLogo !== false,
         includeSignature: invoice.includeSignature !== false,
       });
+
+      if (invoice.shippingAddress?.trim()) {
+        setIsShippingDifferent(true);
+      }
     } catch (error) {
       toast.error("Failed to fetch invoice details");
     }
@@ -472,8 +478,17 @@ const EditInvoice = () => {
   };
 
   const cleanPayload = (payload) => {
+    let finalShippingAddress = payload.shippingAddress;
+    if (
+      invoicePreferences.addressBehavior === "billing_only" ||
+      (invoicePreferences.addressBehavior === "billing_and_shipping" && !isShippingDifferent)
+    ) {
+      finalShippingAddress = "";
+    }
+
     return {
       ...payload,
+      shippingAddress: finalShippingAddress,
       invoiceNumber: `${invoicePreferences.prefix}${payload.invoiceNumber}${invoicePreferences.suffix}`,
       items: payload.items.map((item) => {
         const cleanedItem = { ...item };
@@ -754,19 +769,37 @@ const EditInvoice = () => {
               )}
             </div>
 
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={labelStyle}>
-                Shipping Address (Optional)
-              </label>
-              <textarea
-                name="shippingAddress"
-                value={formData.shippingAddress}
-                onChange={handleInputChange}
-                style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
-                placeholder="Enter separate shipping address (if different from client address)..."
-                {...focusProps}
-              />
-            </div>
+            {invoicePreferences.addressBehavior !== "billing_only" && (
+              <div style={{ gridColumn: "1 / -1", marginTop: "4px" }}>
+                {invoicePreferences.addressBehavior === "billing_and_shipping" && (
+                  <label className="flex items-center cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={isShippingDifferent}
+                      onChange={(e) => setIsShippingDifferent(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Shipping address is different</span>
+                  </label>
+                )}
+                
+                {(invoicePreferences.addressBehavior === "always_both" || isShippingDifferent) && (
+                  <div className="mt-2">
+                    <label style={labelStyle}>
+                      Shipping Address (Optional)
+                    </label>
+                    <textarea
+                      name="shippingAddress"
+                      value={formData.shippingAddress}
+                      onChange={handleInputChange}
+                      style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
+                      placeholder="Enter separate shipping address (if different from client address)..."
+                      {...focusProps}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>
