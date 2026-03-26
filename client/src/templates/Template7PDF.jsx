@@ -1,0 +1,275 @@
+import React from "react";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  Image,
+  StyleSheet,
+} from "@react-pdf/renderer";
+
+// ── Styles ──────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  page: {
+    fontFamily: "Helvetica",
+    fontSize: 9,
+    padding: 20,
+    color: "#000",
+    backgroundColor: "#fff",
+  },
+  // Main Border Container
+  mainContainer: {
+    borderWidth: 1,
+    borderColor: "#000",
+  },
+  // Header Section
+  headerTop: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    padding: 5,
+  },
+  headerLeft: { flex: 1 },
+  headerCenter: { flex: 1, alignItems: "center" },
+  headerRight: { flex: 1, textAlign: "right" },
+  
+  title: { fontSize: 14, fontFamily: "Helvetica-Bold", textDecoration: "underline" },
+  bold: { fontFamily: "Helvetica-Bold" },
+
+  // Work Order / Reference Bar
+  infoBar: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    padding: 4,
+  },
+
+  // Party Table (Bill To / Ship To)
+  partyTable: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+  },
+  partyCol: {
+    flex: 1,
+    padding: 5,
+  },
+  partyLabel: {
+    fontFamily: "Helvetica-Bold",
+    textDecoration: "underline",
+    marginBottom: 4,
+    fontSize: 10,
+  },
+
+  // Items Table
+  tableHeader: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    backgroundColor: "#f9f9f9",
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    minHeight: 120, // To match the large spacing in the design
+  },
+  th: {
+    padding: 4,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    borderRightWidth: 1,
+    borderColor: "#000",
+  },
+  td: {
+    padding: 4,
+    borderRightWidth: 1,
+    borderColor: "#000",
+  },
+  
+  // Footer Sections
+  footerRow: {
+    flexDirection: "row",
+  },
+  footerLeft: {
+    width: "65%",
+    borderRightWidth: 1,
+    borderColor: "#000",
+    padding: 5,
+  },
+  footerRight: {
+    width: "35%",
+  },
+  financialRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    padding: 4,
+  },
+  bankTitle: {
+    fontFamily: "Helvetica-Bold",
+    textDecoration: "underline",
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  grandTotal: {
+    backgroundColor: "#f0f0f0",
+    fontFamily: "Helvetica-Bold",
+    fontSize: 11,
+  }
+});
+
+// Column Widths
+const COL = { work: "15%", crane: "15%", desc: "45%", time: "10%", amt: "15%" };
+
+const Template7PDF = ({ invoiceData, numberToWords, currentUser, signatureBase64 }) => {
+  return (
+    <Document>
+      <Page size="A4" style={s.page}>
+        <View style={s.mainContainer}>
+          
+          {/* Header */}
+          <View style={s.headerTop}>
+            <View style={s.headerLeft}>
+              <Text>GSTIN NO: {currentUser?.taxId || "-"}</Text>
+              <Text>UDHYAM NO: {currentUser?.udyamNo || "-"}</Text>
+            </View>
+            <View style={s.headerCenter}>
+              <Text style={s.title}>TAX INVOICE</Text>
+              {invoiceData?.reverseCharge && <Text style={{ fontSize: 8 }}>REVERSE CHARGE</Text>}
+            </View>
+            <View style={s.headerRight}>
+              <Text style={s.bold}>INVOICE NO: {invoiceData?.invoiceNumber}</Text>
+              <Text style={s.bold}>DATE: {invoiceData?.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}</Text>
+            </View>
+          </View>
+
+          {/* Info Bar */}
+          <View style={s.infoBar}>
+            <Text style={{ flex: 1 }}>WORK ORDER NO: {invoiceData?.workOrderNo || "-"}</Text>
+            <Text style={{ flex: 1 }}>REFERENCE: {invoiceData?.reference || "-"}</Text>
+          </View>
+
+          {/* Party Details (Bill To / Ship To) */}
+          <View style={s.partyTable}>
+            {/* Bill To */}
+            <View style={[s.partyCol, { borderRightWidth: 1, borderColor: "#000" }]}>
+              <Text style={s.partyLabel}>BILL TO PARTY</Text>
+              <Text style={s.bold}>NAME: {invoiceData.client?.companyName}</Text>
+              <Text>ADDRESS: {invoiceData.client?.address?.street}</Text>
+              <Text>{invoiceData.client?.address?.city}, {invoiceData.client?.address?.state} - {invoiceData.client?.address?.zipCode}</Text>
+              <Text style={s.bold}>GSTIN: {invoiceData.client?.gstNumber}</Text>
+              <Text>PAN NO: {invoiceData.client?.panNo || "-"}</Text>
+              <Text>PLACE OF SUPPLY: {invoiceData.client?.address?.state || "-"}</Text>
+            </View>
+            
+            {/* Ship To */}
+            <View style={s.partyCol}>
+              <Text style={s.partyLabel}>SHIP TO PARTY</Text>
+              <Text style={s.bold}>NAME: {invoiceData.shippingAddress?.name || invoiceData.client?.companyName}</Text>
+              <Text>ADDRESS: {invoiceData.shippingAddress?.street || "-"}</Text>
+              <Text>{invoiceData.shippingAddress?.city}, {invoiceData.shippingAddress?.state} - {invoiceData.shippingAddress?.zipCode}</Text>
+              <Text style={s.bold}>SAC CODE: {invoiceData.items?.[0]?.hsnCode || "-"}</Text>
+            </View>
+          </View>
+
+          {/* Items Table Header */}
+          <View style={s.tableHeader}>
+            <Text style={[s.th, { width: COL.work }]}>WORK</Text>
+            <Text style={[s.th, { width: COL.crane }]}>CRANE TYPE</Text>
+            <Text style={[s.th, { width: COL.desc }]}>DESCRIPTION OF WORK</Text>
+            <Text style={[s.th, { width: COL.time }]}>TIME</Text>
+            <Text style={[s.th, { width: COL.amt, borderRightWidth: 0 }]}>AMOUNT</Text>
+          </View>
+
+          {/* Items Table Body */}
+          {invoiceData.items?.map((item, index) => (
+            <View key={index} style={s.tableRow}>
+              <View style={[s.td, { width: COL.work }]}>
+                <Text>{item.workDate || "-"}</Text>
+              </View>
+              <View style={[s.td, { width: COL.crane }]}>
+                <Text>{item.craneType || "-"}</Text>
+              </View>
+              <View style={[s.td, { width: COL.desc }]}>
+                <Text style={s.bold}>{item.description}</Text>
+                {item.notes && <Text style={{ fontSize: 8, marginTop: 4 }}>{item.notes}</Text>}
+              </View>
+              <View style={[s.td, { width: COL.time, textAlign: "center" }]}>
+                <Text>{item.quantity} {item.unitType}</Text>
+              </View>
+              <View style={[s.td, { width: COL.amt, textAlign: "right", borderRightWidth: 0 }]}>
+                <Text>Rs. {item.subtotal?.toFixed(2)}</Text>
+              </View>
+            </View>
+          ))}
+
+          {/* Financials & Footer */}
+          <View style={s.footerRow}>
+            {/* Left Column: Bank & Amount in Words */}
+            <View style={s.footerLeft}>
+              <Text style={s.bold}>AMOUNT IN WORDS:</Text>
+              <Text style={{ marginBottom: 10 }}>{numberToWords(invoiceData.totalAmount || 0)} ONLY.</Text>
+              
+              <Text style={s.bankTitle}>BANK DETAILS FOR PAYMENT</Text>
+              <Text>BANK NAME: {currentUser?.bankDetails?.bankName || "-"}</Text>
+              <Text>AC NAME: {currentUser?.bankDetails?.accountHolderName || "-"}</Text>
+              <Text>AC NO: {currentUser?.bankDetails?.accountNumber || "-"}</Text>
+              <Text>IFSC CODE: {currentUser?.bankDetails?.ifscCode || "-"}</Text>
+              <Text>BRANCH: {currentUser?.bankDetails?.branchName || "-"}</Text>
+              
+              <View style={{ marginTop: 20 }}>
+                <Text style={s.bold}>CUSTOMER RECEIVING</Text>
+                <View style={{ borderBottomWidth: 1, width: 150, marginTop: 20 }} />
+              </View>
+            </View>
+
+            {/* Right Column: Totals */}
+            <View style={s.footerRight}>
+              <View style={s.financialRow}>
+                <Text style={{ flex: 1 }}>BASIC AMOUNT:</Text>
+                <Text>{invoiceData.subtotal?.toFixed(2)}</Text>
+              </View>
+              
+              {invoiceData.taxes?.map((tax, i) => (
+                <View key={i} style={s.financialRow}>
+                  <Text style={{ flex: 1 }}>TAX ({tax.name}) {tax.rate}%:</Text>
+                  <Text>{tax.amount?.toFixed(2)}</Text>
+                </View>
+              ))}
+
+              <View style={s.financialRow}>
+                <Text style={{ flex: 1 }}>ADMIN CHARGE:</Text>
+                <Text>{invoiceData.adminCharge || "0.00"}</Text>
+              </View>
+
+              <View style={s.financialRow}>
+                <Text style={{ flex: 1 }}>ROUND OFF:</Text>
+                <Text>{invoiceData.roundOff || "0.00"}</Text>
+              </View>
+
+              <View style={[s.financialRow, s.grandTotal, { borderBottomWidth: 0 }]}>
+                <Text style={{ flex: 1 }}>GRAND TOTAL:</Text>
+                <Text>Rs. {invoiceData.totalAmount?.toFixed(2)}</Text>
+              </View>
+              
+              {/* Signature Area */}
+              <View style={{ padding: 5, alignItems: "center", marginTop: 5 }}>
+                {signatureBase64 && (
+                  <Image src={signatureBase64} style={{ width: 100, height: 40 }} />
+                )}
+                <Text style={{ fontSize: 8 }}>Authorized Signatory</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <Text style={{ textAlign: "center", fontSize: 8, marginTop: 5 }}>
+          This is a Computer Generated Invoice
+        </Text>
+      </Page>
+    </Document>
+  );
+};
+
+export default Template7PDF;

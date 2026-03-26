@@ -18,6 +18,7 @@ import Template2PDF from "../templates/Template2PDF";
 import Template3PDF from "../templates/Template3PDF";
 import Template4PDF from "../templates/Template4PDF";
 import Template6PDF from "../templates/Template6PDF";
+import Template7PDF from "../templates/Template7PDF";
 
 const InvoiceView = () => {
   const { id } = useParams();
@@ -106,6 +107,8 @@ const InvoiceView = () => {
             return <Template5PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} />;
           case "template6":
             return <Template6PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} logoBase64={logoBase64} />;
+          case "template7":
+            return <Template7PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} />;
           case "template1":
           default:
             return <Template1PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} logoBase64={logoBase64} />;
@@ -129,7 +132,7 @@ const InvoiceView = () => {
   };
 
   const handlePrint = async () => {
-    const isPDFTemplate = ["template1", "template2", "template3", "template4", "template5"].includes(selectedTemplate);
+    const isPDFTemplate = ["template1", "template2", "template3", "template4", "template5", "template6", "template7"].includes(selectedTemplate);
     if (isPDFTemplate) {
       try {
         toast.loading("Preparing print...", { id: "print-pdf" });
@@ -140,6 +143,7 @@ const InvoiceView = () => {
             case "template4": return <Template4PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} />;
             case "template5": return <Template5PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} />;
             case "template6": return <Template6PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} logoBase64={logoBase64} />;
+            case "template7": return <Template7PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} />;
             default: return <Template1PDF invoiceData={invoiceData} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={signatureBase64} logoBase64={logoBase64} />;
           }
         };
@@ -323,6 +327,19 @@ const InvoiceView = () => {
                 currentUser={currentUser}
                 signatureBase64={signatureBase64}
                 logoBase64={logoBase64}
+              />
+            </PDFViewer>
+          </div>
+        );
+      case "template7":
+        return (
+          <div style={{ width: '100%', height: '800px', borderRadius: '12px', overflow: 'hidden' }}>
+            <PDFViewer width="100%" height="100%" className="border-0">
+              <Template7PDF
+                invoiceData={invoiceData}
+                numberToWords={numberToWords}
+                currentUser={currentUser}
+                signatureBase64={signatureBase64}
               />
             </PDFViewer>
           </div>
