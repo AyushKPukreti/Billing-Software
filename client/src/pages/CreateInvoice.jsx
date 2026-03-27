@@ -199,6 +199,27 @@ const CreateInvoice = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "client") {
+      const selectedClient = clients.find((c) => c._id === value);
+      if (selectedClient && invoicePreferences.addressBehavior === "always_both" && !formData.shippingAddress) {
+        const addr = selectedClient.address;
+        const formattedAddress = [
+          addr.street,
+          addr.city,
+          addr.state,
+          addr.zipCode,
+          addr.country,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          shippingAddress: formattedAddress,
+        }));
+        return;
+      }
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

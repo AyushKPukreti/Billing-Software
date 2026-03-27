@@ -222,10 +222,11 @@ export const editUserProfile = async (req, res) => {
 
     // === Invoice Preferences Update ===
     if (invoicePreferences && typeof invoicePreferences === "object") {
-      const { prefix, suffix } = invoicePreferences;
+      const { prefix, suffix, addressBehavior } = invoicePreferences;
       if (!user.invoicePreferences) user.invoicePreferences = {};
       if (prefix !== undefined) user.invoicePreferences.prefix = prefix.trim();
       if (suffix !== undefined) user.invoicePreferences.suffix = suffix.trim();
+      if (addressBehavior !== undefined) user.invoicePreferences.addressBehavior = addressBehavior;
     }
 
     // === Password Update ===

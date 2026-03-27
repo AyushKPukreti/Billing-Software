@@ -59,12 +59,12 @@ const EditInvoice = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      fetchClients();
+      const clientsData = await fetchClients();
       fetchServices();
       fetchBankAccounts();
       fetchCustomUnits();
       const prefs = await fetchProfile();
-      fetchInvoice(prefs);
+      fetchInvoice(prefs, clientsData);
     };
     loadData();
   }, []);
@@ -73,8 +73,10 @@ const EditInvoice = () => {
     try {
       const res = await axios.get(`${BASE_URL}/users/clients`);
       setClients(res.data.clients);
+      return res.data.clients;
     } catch {
       toast.error("Failed to fetch clients");
+      return [];
     }
   };
 
@@ -169,7 +171,7 @@ const EditInvoice = () => {
     }
   };
 
-  const fetchInvoice = async (prefs) => {
+  const fetchInvoice = async (prefs, clientsData) => {
     try {
       const res = await axios.get(`${BASE_URL}/invoices/${id}`);
       const invoice = res.data;
@@ -177,6 +179,7 @@ const EditInvoice = () => {
       let editableInvoiceNumber = invoice.invoiceNumber || "";
       const currentPrefix = prefs?.prefix || invoicePreferences.prefix;
       const currentSuffix = prefs?.suffix || invoicePreferences.suffix;
+      const currentAddressBehavior = prefs?.addressBehavior || invoicePreferences.addressBehavior;
       
       if (currentPrefix && editableInvoiceNumber.startsWith(currentPrefix)) {
         editableInvoiceNumber = editableInvoiceNumber.slice(currentPrefix.length);
@@ -185,12 +188,30 @@ const EditInvoice = () => {
         editableInvoiceNumber = editableInvoiceNumber.slice(0, -currentSuffix.length);
       }
 
+      let shippingAddress = invoice.shippingAddress || "";
+      if (!shippingAddress && currentAddressBehavior === "always_both" && invoice.client) {
+        const clientList = clientsData || clients;
+        const selectedClient = clientList.find((c) => c._id === (invoice.client._id || invoice.client));
+        if (selectedClient) {
+          const addr = selectedClient.address;
+          shippingAddress = [
+            addr.street,
+            addr.city,
+            addr.state,
+            addr.zipCode,
+            addr.country,
+          ]
+            .filter(Boolean)
+            .join(", ");
+        }
+      }
+
       setFormData({
         invoiceNumber: editableInvoiceNumber,
         invoiceDate: invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split("T")[0] : "",
         client: invoice.client || "",
-        shippingAddress: invoice.shippingAddress || "",
-      items: (invoice.items || []).map((item) => item),
+        shippingAddress: shippingAddress,
+        items: (invoice.items || []).map((item) => item),
         discount: invoice.discount || "",
         discountType: invoice.discountType || "fixed",
         taxes: invoice.taxes || [],
@@ -202,7 +223,7 @@ const EditInvoice = () => {
         includeSignature: invoice.includeSignature !== false,
       });
 
-      if (invoice.shippingAddress?.trim()) {
+      if (shippingAddress.trim()) {
         setIsShippingDifferent(true);
       }
     } catch (error) {
@@ -212,6 +233,27 @@ const EditInvoice = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "client") {
+      const selectedClient = clients.find((c) => c._id === value);
+      if (selectedClient && invoicePreferences.addressBehavior === "always_both" && !formData.shippingAddress) {
+        const addr = selectedClient.address;
+        const formattedAddress = [
+          addr.street,
+          addr.city,
+          addr.state,
+          addr.zipCode,
+          addr.country,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          shippingAddress: formattedAddress,
+        }));
+        return;
+      }
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
