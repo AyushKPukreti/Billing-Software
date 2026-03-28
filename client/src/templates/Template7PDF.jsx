@@ -72,19 +72,22 @@ const s = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderColor: "#000",
-    minHeight: 120, // To match the large spacing in the design
+    minHeight: 25,
   },
   th: {
-    padding: 4,
+    padding: 3,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
     borderRightWidth: 1,
     borderColor: "#000",
+    fontSize: 9,
   },
   td: {
-    padding: 4,
+    padding: 3,
     borderRightWidth: 1,
     borderColor: "#000",
+    fontSize: 9,
+    lineHeight: 1.2,
   },
   
   // Footer Sections
@@ -120,9 +123,34 @@ const s = StyleSheet.create({
 });
 
 // Column Widths
-const COL = { work: "15%", crane: "15%", desc: "45%", time: "10%", amt: "15%" };
+const COL = { sr: "6%", desc: "44%", hsn: "15%", time: "15%", amt: "20%" };
 
 const Template7PDF = ({ invoiceData, numberToWords, currentUser, signatureBase64 }) => {
+  console.log("TEMPLATE7 invoiceData:", invoiceData);
+
+  const rawShipping =
+    invoiceData.shippingAddress ||
+    invoiceData.shipping_address ||
+    invoiceData.client?.shippingAddress ||
+    "";
+
+  let shipStr = "";
+
+  if (typeof rawShipping === "string") {
+    shipStr = rawShipping.trim();
+  } else if (typeof rawShipping === "object" && rawShipping !== null) {
+    const parts = [
+      rawShipping.street,
+      [rawShipping.city, rawShipping.state, rawShipping.zipCode].filter(Boolean).join(", "),
+      rawShipping.country,
+    ];
+    shipStr = parts.filter(Boolean).join("\n").trim();
+  }
+
+  const hasShipping = shipStr.length > 0;
+
+  console.log("Shipping extracted:", shipStr, hasShipping);
+
   return (
     <Document>
       <Page size="A4" style={s.page}>
@@ -166,37 +194,45 @@ const Template7PDF = ({ invoiceData, numberToWords, currentUser, signatureBase64
             {/* Ship To */}
             <View style={s.partyCol}>
               <Text style={s.partyLabel}>SHIP TO PARTY</Text>
-              <Text style={s.bold}>NAME: {invoiceData.shippingAddress?.name || invoiceData.client?.companyName}</Text>
-              <Text>ADDRESS: {invoiceData.shippingAddress?.street || "-"}</Text>
-              <Text>{invoiceData.shippingAddress?.city}, {invoiceData.shippingAddress?.state} - {invoiceData.shippingAddress?.zipCode}</Text>
-              <Text style={s.bold}>SAC CODE: {invoiceData.items?.[0]?.hsnCode || "-"}</Text>
+              {hasShipping ? (
+                <>
+                  <Text style={s.bold}>NAME: {invoiceData.shippingAddress?.name || invoiceData.client?.companyName}</Text>
+                  <Text>ADDRESS: {shipStr}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.bold}>NAME: {invoiceData.client?.companyName || "-"}</Text>
+                  <Text>ADDRESS: -</Text>
+                </>
+              )}
+              <Text style={[s.bold, { marginTop: 4 }]}>SAC CODE: {invoiceData.items?.[0]?.hsnCode || "-"}</Text>
             </View>
           </View>
 
           {/* Items Table Header */}
           <View style={s.tableHeader}>
-            <Text style={[s.th, { width: COL.work }]}>WORK</Text>
-            <Text style={[s.th, { width: COL.crane }]}>CRANE TYPE</Text>
-            <Text style={[s.th, { width: COL.desc }]}>DESCRIPTION OF WORK</Text>
-            <Text style={[s.th, { width: COL.time }]}>TIME</Text>
-            <Text style={[s.th, { width: COL.amt, borderRightWidth: 0 }]}>AMOUNT</Text>
+            <Text style={[s.th, { width: COL.sr }]}>Sr. No.</Text>
+            <Text style={[s.th, { width: COL.desc }]}>Description of Work</Text>
+            <Text style={[s.th, { width: COL.hsn }]}>HSN/SAC</Text>
+            <Text style={[s.th, { width: COL.time }]}>Time/Unit</Text>
+            <Text style={[s.th, { width: COL.amt, borderRightWidth: 0 }]}>Amount</Text>
           </View>
 
           {/* Items Table Body */}
           {invoiceData.items?.map((item, index) => (
-            <View key={index} style={s.tableRow}>
-              <View style={[s.td, { width: COL.work }]}>
-                <Text>{item.workDate || "-"}</Text>
-              </View>
-              <View style={[s.td, { width: COL.crane }]}>
-                <Text>{item.craneType || "-"}</Text>
+            <View key={index} style={s.tableRow} wrap={false}>
+              <View style={[s.td, { width: COL.sr, textAlign: "center" }]}>
+                <Text>{index + 1}</Text>
               </View>
               <View style={[s.td, { width: COL.desc }]}>
                 <Text style={s.bold}>{item.description}</Text>
-                {item.notes && <Text style={{ fontSize: 8, marginTop: 4 }}>{item.notes}</Text>}
+                {item.notes && <Text style={{ fontSize: 7, marginTop: 2 }}>{item.notes}</Text>}
+              </View>
+              <View style={[s.td, { width: COL.hsn, textAlign: "center" }]}>
+                <Text>{item.hsnCode || "-"}</Text>
               </View>
               <View style={[s.td, { width: COL.time, textAlign: "center" }]}>
-                <Text>{item.quantity} {item.unitType}</Text>
+                <Text>{item.quantity} {item.unitType || item.unit || ""}</Text>
               </View>
               <View style={[s.td, { width: COL.amt, textAlign: "right", borderRightWidth: 0 }]}>
                 <Text>Rs. {item.subtotal?.toFixed(2)}</Text>

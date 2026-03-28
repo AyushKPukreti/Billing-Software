@@ -273,9 +273,11 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
         {/* ═══ TITLE ═══ */}
         <View style={[s.titleBlock, { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }]}>
           <View style={{ flex: 1, alignItems: "flex-start", paddingTop: 4 }}>
-            <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
-              Invoice No: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceNumber || "-"}</Text>
-            </Text>
+            {invoiceData.shippingAddress && (
+              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
+                Invoice No: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceNumber || "-"}</Text>
+              </Text>
+            )}
           </View>
 
           <View style={{ flex: 1, alignItems: "center" }}>
@@ -284,12 +286,16 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
           </View>
 
           <View style={{ flex: 1, alignItems: "flex-end", paddingTop: 4 }}>
-            <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 2 }}>
-              Invoice Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}</Text>
-            </Text>
-            <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
-              Due Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString("en-GB") : "-"}</Text>
-            </Text>
+            {invoiceData.shippingAddress && (
+              <>
+                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 2 }}>
+                  Invoice Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}</Text>
+                </Text>
+                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
+                  Due Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString("en-GB") : "-"}</Text>
+                </Text>
+              </>
+            )}
           </View>
         </View>
 
@@ -314,8 +320,8 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
             </Text>
           </View>
 
-          {/* Right: Ship To */}
-          {invoiceData.shippingAddress && (
+          {/* Right: Ship To or Invoice Details */}
+          {invoiceData.shippingAddress ? (
             <View style={[s.billToBox, { flex: 1 }]}>
               <Text style={s.billToLabel}>Ship To:</Text>
               {typeof invoiceData.shippingAddress === "string" ? (
@@ -342,6 +348,22 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
                   )}
                 </>
               )}
+            </View>
+          ) : (
+            <View style={[s.billToBox, { flex: 1 }]}>
+              <Text style={s.billToLabel}>Invoice Details:</Text>
+              <Text style={s.bodyText}>
+                <Text style={s.bold}>Invoice No: </Text>
+                {invoiceData.invoiceNumber || "-"}
+              </Text>
+              <Text style={s.bodyText}>
+                <Text style={s.bold}>Invoice Date: </Text>
+                {invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}
+              </Text>
+              <Text style={s.bodyText}>
+                <Text style={s.bold}>Due Date: </Text>
+                {invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString("en-GB") : "-"}
+              </Text>
             </View>
           )}
         </View>
