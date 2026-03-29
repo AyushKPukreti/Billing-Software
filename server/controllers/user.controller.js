@@ -222,10 +222,11 @@ export const editUserProfile = async (req, res) => {
 
     // === Invoice Preferences Update ===
     if (invoicePreferences && typeof invoicePreferences === "object") {
-      const { prefix, suffix } = invoicePreferences;
+      const { prefix, suffix, addressBehavior } = invoicePreferences;
       if (!user.invoicePreferences) user.invoicePreferences = {};
       if (prefix !== undefined) user.invoicePreferences.prefix = prefix.trim();
       if (suffix !== undefined) user.invoicePreferences.suffix = suffix.trim();
+      if (addressBehavior !== undefined) user.invoicePreferences.addressBehavior = addressBehavior;
     }
 
     // === Password Update ===
@@ -908,6 +909,84 @@ export const setPrimaryBankAccount = async (req, res) => {
     res.status(200).json({ message: "Primary bank account set", bankAccounts: user.bankAccounts });
   } catch (error) {
     console.error("Error setting primary bank account:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ── Custom Units ──
+
+export const getCustomUnits = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.user._id).select("customUnits");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ customUnits: user.customUnits || [] });
+  } catch (error) {
+    console.error("Error fetching custom units:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const addCustomUnit = async (req, res) => {
+  try {
+    const { name, shortCode } = req.body;
+    const trimmedName = name?.trim();
+
+    if (!trimmedName) {
+      return res.status(400).json({ message: "Unit name is required." });
+    }
+
+    const user = await UserModel.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check for duplicate (case-insensitive)
+    const duplicate = (user.customUnits || []).find(
+      (u) => u.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (duplicate) {
+      return res.status(409).json({ message: `Custom unit "${trimmedName}" already exists.` });
+    }
+
+    user.customUnits.push({
+      name: trimmedName,
+      shortCode: shortCode?.trim() || "",
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      message: "Custom unit added successfully.",
+      customUnits: user.customUnits,
+    });
+  } catch (error) {
+    console.error("Error adding custom unit:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const deleteCustomUnit = async (req, res) => {
+  try {
+    const unitId = req.params.id;
+
+    const user = await UserModel.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const unitIndex = (user.customUnits || []).findIndex(
+      (u) => u._id.toString() === unitId
+    );
+    if (unitIndex === -1) {
+      return res.status(404).json({ message: "Custom unit not found." });
+    }
+
+    user.customUnits.splice(unitIndex, 1);
+    await user.save();
+
+    res.status(200).json({
+      message: "Custom unit deleted successfully.",
+      customUnits: user.customUnits,
+    });
+  } catch (error) {
+    console.error("Error deleting custom unit:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

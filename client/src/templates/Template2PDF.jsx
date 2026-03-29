@@ -210,30 +210,74 @@ const Template2PDF = ({ invoiceData, currentUser, numberToWords, copyType, signa
           </View>
         </View>
 
-        {/* 4. Bill To Section */}
-        <View style={s.sectionBox}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionHeaderTitle}>BILL TO</Text>
+        {/* 4. Bill To Section (with conditional Ship To) */}
+        <View style={invoiceData.shippingAddress ? { flexDirection: "row", gap: 12, marginBottom: 15 } : {}}>
+          {/* Bill To Box */}
+          <View style={[s.sectionBox, invoiceData.shippingAddress ? { flex: 1, marginBottom: 0 } : {}]}>
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionHeaderTitle}>BILL TO</Text>
+            </View>
+            <View style={s.sectionBody}>
+              <Text style={[s.textRow, s.bold]}>
+                {invoiceData.client?.companyName?.toUpperCase() || ""}
+              </Text>
+              <Text style={s.textRow}>
+                {invoiceData.client?.address?.street || ""},{" "}
+                {invoiceData.client?.address?.city || ""},{" "}
+                {invoiceData.client?.address?.state || ""} -{" "}
+                {invoiceData.client?.address?.zipCode || ""},{" "}
+                {invoiceData.client?.address?.country || ""}
+              </Text>
+              <Text style={s.textRow}>GST No: {invoiceData.client?.gstNumber || "N/A"}</Text>
+              {invoiceData.client?.phone && (
+                <Text style={s.textRow}>Phone: {invoiceData.client.phone}</Text>
+              )}
+              {invoiceData.client?.email && (
+                <Text style={s.textRow}>Email: {invoiceData.client.email}</Text>
+              )}
+            </View>
           </View>
-          <View style={s.sectionBody}>
-            <Text style={[s.textRow, s.bold]}>
-              {invoiceData.client?.companyName?.toUpperCase() || ""}
-            </Text>
-            <Text style={s.textRow}>
-              {invoiceData.client?.address?.street || ""},{" "}
-              {invoiceData.client?.address?.city || ""},{" "}
-              {invoiceData.client?.address?.state || ""} -{" "}
-              {invoiceData.client?.address?.zipCode || ""},{" "}
-              {invoiceData.client?.address?.country || ""}
-            </Text>
-            <Text style={s.textRow}>GST No: {invoiceData.client?.gstNumber || "N/A"}</Text>
-            {invoiceData.client?.phone && (
-              <Text style={s.textRow}>Phone: {invoiceData.client.phone}</Text>
-            )}
-            {invoiceData.client?.email && (
-              <Text style={s.textRow}>Email: {invoiceData.client.email}</Text>
-            )}
-          </View>
+
+          {/* Ship To Box (Conditional) */}
+          {invoiceData.shippingAddress && (
+            <View style={[s.sectionBox, { flex: 1, marginBottom: 0 }]}>
+              <View style={s.sectionHeader}>
+                <Text style={s.sectionHeaderTitle}>SHIP TO</Text>
+              </View>
+              <View style={s.sectionBody}>
+                <Text style={[s.textRow, s.bold]}>
+                  {invoiceData.client?.companyName?.toUpperCase() || ""}
+                </Text>
+                {typeof invoiceData.shippingAddress === "string" ? (
+                  invoiceData.shippingAddress.split("\n").map((line, i) => (
+                    <Text key={i} style={s.textRow}>
+                      {line}
+                    </Text>
+                  ))
+                ) : (
+                  <>
+                    {invoiceData.shippingAddress.street && (
+                      <Text style={s.textRow}>{invoiceData.shippingAddress.street}</Text>
+                    )}
+                    {(invoiceData.shippingAddress.city || invoiceData.shippingAddress.state || invoiceData.shippingAddress.zipCode) && (
+                      <Text style={s.textRow}>
+                        {[
+                          invoiceData.shippingAddress.city,
+                          invoiceData.shippingAddress.state,
+                          invoiceData.shippingAddress.zipCode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </Text>
+                    )}
+                    {invoiceData.shippingAddress.country && (
+                      <Text style={s.textRow}>{invoiceData.shippingAddress.country}</Text>
+                    )}
+                  </>
+                )}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* 5. Items Table */}
@@ -396,7 +440,7 @@ const Template2PDF = ({ invoiceData, currentUser, numberToWords, copyType, signa
             {signatureBase64 && invoiceData.includeSignature !== false && (
               <Image 
                 src={signatureBase64} 
-                style={{ width: 100, height: 40, objectFit: "contain", alignSelf: "flex-end", marginBottom: 10 }} 
+                style={{ width: 160, height: 60, objectFit: "contain", alignSelf: "flex-end", marginBottom: 10 }} 
               />
             )}
             <Text style={s.sigLine}>Authorized Signatory</Text>

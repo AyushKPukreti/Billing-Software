@@ -9,6 +9,7 @@ const templates = [
   { id: "template4", name: "Template 4" },
   { id: "template5", name: "Template 5" },
   { id: "template6", name: "Template 6" },
+  { id: "template7", name: "Template 7" },
 ];
 
 const TemplateSidebar = ({

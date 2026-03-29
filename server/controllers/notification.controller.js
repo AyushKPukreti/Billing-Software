@@ -1,4 +1,4 @@
-import { sendSMS } from "../lib/twilio.js";
+import { sendSMS } from "../lib/smsProvider.js";
 
 export const sendInvoiceSMS = async (req, res) => {
   const { to, invoiceNumber, amount, dueDate, customerName } = req.body;
@@ -7,32 +7,29 @@ export const sendInvoiceSMS = async (req, res) => {
     return res.status(400).json({ success: false, message: "Phone number is required" });
   }
 
-  // Ensure 'to' has a '+' prefix and correct country code for Twilio compatibility
-  // If it's a 10-digit number, assume it's Indian (+91)
-  let formattedTo = to.trim();
-  if (formattedTo.length === 10 && !formattedTo.startsWith('+')) {
-    formattedTo = '+91' + formattedTo;
-  } else if (!formattedTo.startsWith('+')) {
-    formattedTo = '+' + formattedTo;
+  // Ensure 'to' has no '+' prefix and has correct country code for MSG91 compatibility
+  // If it's a 10-digit number, assume it's Indian (91 prefix)
+  let formattedTo = String(to).replace(/\D/g, '');
+  if (formattedTo.length === 10) {
+    formattedTo = '91' + formattedTo;
   }
 
-  const message = `Hello ${customerName || 'Customer'}, your invoice #${invoiceNumber} for Rs. ${amount} is due on ${dueDate}. Please make the payment. Thank you!`;
+  // Construct MSG91 template variables instead of a raw message string
+  const templateParams = {
+    var1: customerName || 'Customer',
+    var2: invoiceNumber,
+    var3: amount,
+    var4: dueDate
+  };
 
-  const result = await sendSMS(formattedTo, message);
+  const result = await sendSMS(formattedTo, templateParams);
 
   if (result.success) {
-    res.status(200).json({ success: true, message: "SMS sent successfully", sid: result.sid });
+    res.status(200).json({ success: true, message: "SMS sent successfully", reqId: result.reqId });
   } else {
     console.error("SMS Send Error:", result);
-    let errorMsg = result.error || "Failed to send SMS";
-    
-    // Handle specific Twilio Trial Account error
-    if (result.code === 21608) {
-      errorMsg = "Twilio Trial Account: The destination number is not verified. Please verify it in your Twilio Console.";
-    } else if (result.status === 401) {
-      errorMsg = "Twilio Authentication Failed: Please check your Auth Token in the .env file.";
-    }
+    const errorMsg = result.error || "Failed to send SMS";
 
-    res.status(500).json({ success: false, message: errorMsg, code: result.code });
+    res.status(500).json({ success: false, message: errorMsg });
   }
 };

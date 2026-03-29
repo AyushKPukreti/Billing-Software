@@ -124,6 +124,12 @@ const userSchema = new mongoose.Schema(
         isPrimary: { type: Boolean, default: false },
       }
     ],
+    customUnits: [
+      {
+        name: { type: String, required: true, trim: true },
+        shortCode: { type: String, trim: true, default: "" },
+      }
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -147,6 +153,11 @@ const userSchema = new mongoose.Schema(
         type: String,
         trim: true,
         default: "",
+      },
+      addressBehavior: {
+        type: String,
+        enum: ["billing_only", "billing_and_shipping", "always_both"],
+        default: "billing_and_shipping",
       },
     },
     logoUrl: { type: String, default: '' },

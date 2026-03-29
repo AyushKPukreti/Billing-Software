@@ -47,6 +47,7 @@ const Profile = () => {
     invoicePreferences: {
       prefix: "",
       suffix: "",
+      addressBehavior: "billing_and_shipping",
     },
   });
 
@@ -87,6 +88,7 @@ const Profile = () => {
           invoicePreferences: {
             prefix: data.invoicePreferences?.prefix || "",
             suffix: data.invoicePreferences?.suffix || "",
+            addressBehavior: data.invoicePreferences?.addressBehavior || "billing_and_shipping",
           },
         });
         setLogoUrl(data.logoUrl || '');
@@ -483,6 +485,68 @@ const Profile = () => {
               style={{ padding: "10px" }}
               placeholder="e.g. -2025"
             />
+          </div>
+        </div>
+
+        {/* Address Behavior Options */}
+        <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid #e5e7eb" }}>
+          <h4 className="text-sm font-medium text-gray-900" style={{ marginBottom: "16px" }}>
+            Invoice Address Display
+          </h4>
+          <div className="flex flex-col gap-5">
+            {/* Option 1 */}
+            <label className="flex items-start cursor-pointer group">
+              <div className="flex items-center h-5 mt-0.5">
+                <input
+                  type="radio"
+                  name="addressBehavior"
+                  value="billing_only"
+                  checked={formData.invoicePreferences.addressBehavior === "billing_only"}
+                  onChange={handleInvoicePreferencesChange}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <span className="font-medium text-gray-900 block">Billing address only</span>
+                <span className="text-gray-500 block mt-1">Use the client billing address for invoices. Do not show shipping address fields unless needed.</span>
+              </div>
+            </label>
+
+            {/* Option 2 */}
+            <label className="flex items-start cursor-pointer group">
+              <div className="flex items-center h-5 mt-0.5">
+                <input
+                  type="radio"
+                  name="addressBehavior"
+                  value="billing_and_shipping"
+                  checked={formData.invoicePreferences.addressBehavior === "billing_and_shipping"}
+                  onChange={handleInvoicePreferencesChange}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <span className="font-medium text-gray-900 block">Billing + Shipping when different (Default)</span>
+                <span className="text-gray-500 block mt-1">Show a toggle in invoice creation to optionally add a different shipping address.</span>
+              </div>
+            </label>
+
+            {/* Option 3 */}
+            <label className="flex items-start cursor-pointer group">
+              <div className="flex items-center h-5 mt-0.5">
+                <input
+                  type="radio"
+                  name="addressBehavior"
+                  value="always_both"
+                  checked={formData.invoicePreferences.addressBehavior === "always_both"}
+                  onChange={handleInvoicePreferencesChange}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <span className="font-medium text-gray-900 block">Always show both</span>
+                <span className="text-gray-500 block mt-1">Always show both billing and shipping address fields directly.</span>
+              </div>
+            </label>
           </div>
         </div>
       </div>

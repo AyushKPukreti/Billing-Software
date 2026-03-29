@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ChevronUp, ChevronDown, X } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import ItemLabel from "../components/ItemLabel";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const unitTypes = [
-  "km", "hour", "day", "month", "item", "kg", "piece", "service", "ton", "shift", "other",
+const DEFAULT_UNITS = [
+  "km", "hour", "day", "month", "item", "kg", "piece", "service", "ton", "shift",
 ];
 const pricingTypes = ["fixed", "flat", "tiered"];
 const discountTypes = ["percentage", "fixed"];
@@ -25,7 +25,14 @@ const CreateInvoice = () => {
   const [totals, setTotals] = useState(0);
   const [validationErrors, setValidationErrors] = useState({});
   const [collapsedItems, setCollapsedItems] = useState([]);
-  const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "" });
+  const [invoicePreferences, setInvoicePreferences] = useState({ prefix: "", suffix: "", addressBehavior: "billing_and_shipping" });
+  const [customUnits, setCustomUnits] = useState([]);
+  const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+  const [addUnitForIndex, setAddUnitForIndex] = useState(null);
+  const [newUnitName, setNewUnitName] = useState("");
+  const [newUnitShortCode, setNewUnitShortCode] = useState("");
+  const [addingUnit, setAddingUnit] = useState(false);
+  const [isShippingDifferent, setIsShippingDifferent] = useState(false);
   
   const toggleCollapse = (index) => {
     setCollapsedItems((prev) =>
@@ -37,6 +44,7 @@ const CreateInvoice = () => {
     invoiceNumber: "",
     invoiceDate: "",
     client: "",
+    shippingAddress: "",
     items: [
       {
         service: "",
@@ -66,6 +74,7 @@ const CreateInvoice = () => {
     fetchServices();
     fetchBankAccounts();
     fetchProfile();
+    fetchCustomUnits();
 
     const today = new Date();
     const defaultDueDate = new Date();
@@ -123,10 +132,58 @@ const CreateInvoice = () => {
         setInvoicePreferences({
           prefix: res.data.invoicePreferences.prefix || "",
           suffix: res.data.invoicePreferences.suffix || "",
+          addressBehavior: res.data.invoicePreferences.addressBehavior || "billing_and_shipping",
         });
       }
     } catch {
       console.error("Failed to fetch profile");
+    }
+  };
+
+  const fetchCustomUnits = async () => {
+    try {
+      axios.defaults.withCredentials = true;
+      const res = await axios.get(`${BASE_URL}/users/custom-units`);
+      setCustomUnits(res.data.customUnits || []);
+    } catch {
+      console.error("Failed to fetch custom units");
+    }
+  };
+
+  const handleUnitChange = (index, value) => {
+    if (value === "__add_custom__") {
+      setAddUnitForIndex(index);
+      setNewUnitName("");
+      setNewUnitShortCode("");
+      setShowAddUnitModal(true);
+    } else {
+      handleItemChange(index, "unitType", value);
+    }
+  };
+
+  const handleAddCustomUnit = async () => {
+    const trimmed = newUnitName.trim();
+    if (!trimmed) {
+      toast.error("Unit name is required");
+      return;
+    }
+    setAddingUnit(true);
+    try {
+      const res = await axios.post(`${BASE_URL}/users/custom-units`, {
+        name: trimmed,
+        shortCode: newUnitShortCode.trim(),
+      });
+      setCustomUnits(res.data.customUnits);
+      // Select the newly added unit for the current item
+      if (addUnitForIndex !== null) {
+        handleItemChange(addUnitForIndex, "unitType", trimmed);
+      }
+      setShowAddUnitModal(false);
+      toast.success("Custom unit added!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add custom unit");
+    } finally {
+      setAddingUnit(false);
     }
   };
 
@@ -142,6 +199,27 @@ const CreateInvoice = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "client") {
+      const selectedClient = clients.find((c) => c._id === value);
+      if (selectedClient && invoicePreferences.addressBehavior === "always_both" && !formData.shippingAddress) {
+        const addr = selectedClient.address;
+        const formattedAddress = [
+          addr.street,
+          addr.city,
+          addr.state,
+          addr.zipCode,
+          addr.country,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          shippingAddress: formattedAddress,
+        }));
+        return;
+      }
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -454,8 +532,17 @@ const CreateInvoice = () => {
   };
 
   const cleanPayload = (payload) => {
+    let finalShippingAddress = payload.shippingAddress;
+    if (
+      invoicePreferences.addressBehavior === "billing_only" ||
+      (invoicePreferences.addressBehavior === "billing_and_shipping" && !isShippingDifferent)
+    ) {
+      finalShippingAddress = "";
+    }
+
     return {
       ...payload,
+      shippingAddress: finalShippingAddress,
       invoiceNumber: `${invoicePreferences.prefix}${payload.invoiceNumber}${invoicePreferences.suffix}`,
       items: payload.items.map((item) => {
         const cleanedItem = { ...item };
@@ -644,7 +731,8 @@ const CreateInvoice = () => {
                   value={formData.invoiceNumber}
                   onChange={handleInputChange}
                   style={{
-                    flex: 1,
+                    flex: "1 1 auto",
+                    minWidth: 0,
                     padding: "12px 16px",
                     border: "none",
                     background: "transparent",
@@ -730,6 +818,38 @@ const CreateInvoice = () => {
                 <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>{validationErrors.client}</p>
               )}
             </div>
+
+            {invoicePreferences.addressBehavior !== "billing_only" && (
+              <div style={{ gridColumn: "1 / -1", marginTop: "4px" }}>
+                {invoicePreferences.addressBehavior === "billing_and_shipping" && (
+                  <label className="flex items-center cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={isShippingDifferent}
+                      onChange={(e) => setIsShippingDifferent(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Shipping address is different</span>
+                  </label>
+                )}
+                
+                {(invoicePreferences.addressBehavior === "always_both" || isShippingDifferent) && (
+                  <div className="mt-2">
+                    <label style={labelStyle}>
+                      Shipping Address (Optional)
+                    </label>
+                    <textarea
+                      name="shippingAddress"
+                      value={formData.shippingAddress}
+                      onChange={handleInputChange}
+                      style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
+                      placeholder="Enter separate shipping address (if different from client address)..."
+                      {...focusProps}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>
@@ -907,15 +1027,29 @@ const CreateInvoice = () => {
                       </div>
 
                       {/* Unit */}
-                      <div style={{ flex: "1 1 100px", minWidth: "100px" }}>
+                      <div style={{ flex: "1 1 140px", minWidth: "140px" }}>
                         <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Unit</label>
                         <select
-                          value={item.unitType}
-                          onChange={(e) => handleItemChange(index, "unitType", e.target.value)}
+                          value={DEFAULT_UNITS.includes(item.unitType) || customUnits.some(u => u.name === item.unitType) ? item.unitType : item.unitType}
+                          onChange={(e) => handleUnitChange(index, e.target.value)}
                           style={{ ...inputStyle, marginTop: 0, padding: "10px 14px", height: "42px" }}
                           {...focusProps}
                         >
-                          {unitTypes.map((u) => <option key={u} value={u}>{u}</option>)}
+                          <optgroup label="Default Units">
+                            {DEFAULT_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                          </optgroup>
+                          {customUnits.length > 0 && (
+                            <optgroup label="Custom Units">
+                              {customUnits.map((u) => <option key={u._id} value={u.name}>{u.name}{u.shortCode ? ` (${u.shortCode})` : ""}</option>)}
+                            </optgroup>
+                          )}
+                          <optgroup label="">
+                            <option value="__add_custom__">+ Add Custom Unit</option>
+                          </optgroup>
+                          {/* Show current value if it's a legacy unit not in any list */}
+                          {item.unitType && !DEFAULT_UNITS.includes(item.unitType) && !customUnits.some(u => u.name === item.unitType) && item.unitType !== "__add_custom__" && (
+                            <option value={item.unitType} hidden>{item.unitType}</option>
+                          )}
                         </select>
                       </div>
 
@@ -1298,6 +1432,92 @@ const CreateInvoice = () => {
         </div>
 
       </form>
+
+      {/* Add Custom Unit Modal */}
+      {showAddUnitModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "24px",
+        }}
+          onClick={() => setShowAddUnitModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff", borderRadius: "20px",
+              boxShadow: "0 24px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)",
+              padding: "28px", width: "100%", maxWidth: "400px",
+              animation: "fadeInScale 200ms ease",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary, #1D1D1F)", letterSpacing: "-0.02em" }}>Add Custom Unit</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddUnitModal(false)}
+                style={{ background: "var(--surface-secondary, #F5F5F7)", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-secondary, #6E6E73)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                  Unit Name <span style={{ color: "#DC2626" }}>*</span>
+                </label>
+                <input
+                  value={newUnitName}
+                  onChange={(e) => setNewUnitName(e.target.value)}
+                  placeholder="e.g. litre, bundle, session"
+                  style={{ ...inputStyle, marginTop: 0 }}
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCustomUnit(); } }}
+                  {...focusProps}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-secondary, #6E6E73)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                  Short Code <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
+                </label>
+                <input
+                  value={newUnitShortCode}
+                  onChange={(e) => setNewUnitShortCode(e.target.value)}
+                  placeholder="e.g. ltr, bdl, sess"
+                  style={{ ...inputStyle, marginTop: 0 }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCustomUnit(); } }}
+                  {...focusProps}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+              <button
+                type="button"
+                onClick={() => setShowAddUnitModal(false)}
+                style={{
+                  ...btnSecondary, flex: 1, padding: "12px",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomUnit}
+                disabled={addingUnit}
+                style={{
+                  ...btnPrimary, flex: 1, padding: "12px",
+                  opacity: addingUnit ? 0.6 : 1,
+                }}
+              >
+                {addingUnit ? "Saving..." : "Save Unit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -30,19 +30,6 @@ const invoiceItemSchema = new mongoose.Schema({
 
   unitType: {
     type: String,
-    enum: [
-      "km",
-      "hour",
-      "day",
-      "month",
-      "item",
-      "kg",
-      "piece",
-      "service",
-      "ton",
-      "shift",
-      "other",
-    ],
     required: true,
   },
 
@@ -108,6 +95,11 @@ const invoiceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Client",
       required: true,
+    },
+
+    shippingAddress: {
+      type: String,
+      required: false,
     },
 
     items: [invoiceItemSchema],

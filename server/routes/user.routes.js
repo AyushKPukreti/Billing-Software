@@ -1,5 +1,5 @@
 import express from 'express'
-import { addBankDetails, addClient, deleteBankDetails, deleteClient, editClient, editUserProfile, getBankDetails, getClientById, getClientLedger, getProfile, getUserClients, loginUser, registerUser, updateBankDetails, getBankAccounts, addBankAccount, updateBankAccount, deleteBankAccount, setPrimaryBankAccount, uploadLogo, removeLogo, uploadSignature, removeSignature } from '../controllers/user.controller.js'
+import { addBankDetails, addClient, deleteBankDetails, deleteClient, editClient, editUserProfile, getBankDetails, getClientById, getClientLedger, getProfile, getUserClients, loginUser, registerUser, updateBankDetails, getBankAccounts, addBankAccount, updateBankAccount, deleteBankAccount, setPrimaryBankAccount, uploadLogo, removeLogo, uploadSignature, removeSignature, getCustomUnits, addCustomUnit, deleteCustomUnit } from '../controllers/user.controller.js'
 import { isAuthenticated } from '../middleware/auth.middleware.js';
 import { uploadLogo as uploadLogoMiddleware, uploadSignature as uploadSignatureMiddleware } from '../middleware/upload.middleware.js';
 
@@ -42,5 +42,10 @@ router.post('/upload-logo', isAuthenticated, uploadLogoMiddleware, uploadLogo);
 router.delete('/remove-logo', isAuthenticated, removeLogo);
 router.post('/upload-signature', isAuthenticated, uploadSignatureMiddleware, uploadSignature);
 router.delete('/remove-signature', isAuthenticated, removeSignature);
+
+// Custom Units
+router.get('/custom-units', isAuthenticated, getCustomUnits);
+router.post('/custom-units', isAuthenticated, addCustomUnit);
+router.delete('/custom-units/:id', isAuthenticated, deleteCustomUnit);
 
 export default router
