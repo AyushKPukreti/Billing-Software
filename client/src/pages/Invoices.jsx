@@ -176,7 +176,7 @@ const Invoices = () => {
         amount: emailInvoice.totalAmount,
         due_date: emailInvoice.dueDate ? new Date(emailInvoice.dueDate).toLocaleDateString("en-GB") : "",
         business_name: currentUser?.businessName || "",
-        ...(pdfBase64 ? { invoice_pdf: pdfBase64 } : {}),
+        message: "Your invoice PDF has been generated and securely stored. Please reply to this email if you need a copy.",
       };
 
       // Send Email if selected
