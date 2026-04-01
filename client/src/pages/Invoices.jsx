@@ -77,7 +77,7 @@ const Invoices = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [notificationTypes, setNotificationTypes] = useState({ email: true, sms: false });
+  const [notificationTypes, setNotificationTypes] = useState({ email: true, sms: false, whatsapp: false });
 
   const handleOpenEmailModal = (invoice) => {
     setEmailInvoice(invoice);
@@ -85,7 +85,8 @@ const Invoices = () => {
     // Auto-select SMS if email is missing, otherwise default to email
     setNotificationTypes({ 
       email: !!invoice.client?.email, 
-      sms: !!invoice.client?.phone 
+      sms: !!invoice.client?.phone,
+      whatsapp: !!invoice.client?.phone
     });
   };
 
@@ -102,7 +103,7 @@ const Invoices = () => {
       return;
     }
 
-    if (!notificationTypes.email && !notificationTypes.sms) {
+    if (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp) {
       toast.error("Please select at least one notification method.");
       return;
     }
@@ -207,6 +208,24 @@ const Invoices = () => {
         } catch (smsError) {
           console.error("Twilio SMS Error:", smsError);
           toast.error(smsError.response?.data?.message || "Failed to send SMS reminder.");
+        }
+      }
+
+      // Send WhatsApp Notification via Twilio if selected
+      if (notificationTypes.whatsapp && emailInvoice.client?.phone) {
+        try {
+          await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/send-whatsapp`, {
+            invoiceId: emailInvoice._id,
+            to: emailInvoice.client.phone,
+            invoiceNumber: emailInvoice.invoiceNumber,
+            amount: emailInvoice.totalAmount,
+            dueDate: templateParams.due_date,
+            customerName: templateParams.to_name
+          });
+          toast.success(`WhatsApp reminder sent to ${emailInvoice.client.phone}`);
+        } catch (waError) {
+          console.error("Twilio WhatsApp Error:", waError);
+          toast.error(waError.response?.data?.message || "Failed to send WhatsApp reminder.");
         }
       }
 
@@ -1015,6 +1034,24 @@ const Invoices = () => {
                   <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.phone || 'No phone number available'}</div>
                 </div>
               </label>
+
+              <label style={{ 
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                borderRadius: '10px', border: '1px solid #E5E5E7', cursor: (emailInvoice.client?.phone) ? 'pointer' : 'not-allowed',
+                background: notificationTypes.whatsapp ? '#F5F5F7' : '#fff',
+                opacity: emailInvoice.client?.phone ? 1 : 0.6
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={notificationTypes.whatsapp} 
+                  onChange={(e) => setNotificationTypes(prev => ({ ...prev, whatsapp: e.target.checked }))}
+                  disabled={!emailInvoice.client?.phone}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600 }}>Send via WhatsApp</div>
+                  <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.phone || 'No phone number available'}</div>
+                </div>
+              </label>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -1030,9 +1067,9 @@ const Invoices = () => {
                 style={{ 
                   padding: '10px 24px', borderRadius: '10px', border: 'none', 
                   background: '#0071E3', color: '#fff', cursor: 'pointer', fontWeight: 600,
-                  opacity: (isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)) ? 0.7 : 1
+                  opacity: (isSendingEmail || (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp)) ? 0.7 : 1
                 }}
-                disabled={isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)}
+                disabled={isSendingEmail || (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp)}
               >
                 {isSendingEmail ? "Sending..." : "Send Now"}
               </button>

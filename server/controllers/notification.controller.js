@@ -1,4 +1,4 @@
-import { sendSMS } from "../lib/smsProvider.js";
+import { sendSMS, sendWhatsApp } from "../lib/smsProvider.js";
 import { canSendNotification } from "../utils/notification.helper.js";
 import InvoiceModel from "../models/invoice.model.js";
 
@@ -82,6 +82,58 @@ export const logEmailSuccess = async (req, res) => {
     return res.status(200).json({ success: true, message: "Email send logged successfully" });
   } catch (error) {
     console.error("logEmailSuccess error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const sendInvoiceWhatsApp = async (req, res) => {
+  const { invoiceId, to, invoiceNumber, amount, dueDate, customerName } = req.body;
+
+  if (!to) {
+    return res.status(400).json({ success: false, message: "Phone number is required to send WhatsApp" });
+  }
+
+  if (!invoiceId) {
+    return res.status(400).json({ success: false, message: "Invoice ID is required" });
+  }
+
+  try {
+    const invoice = await InvoiceModel.findById(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
+
+    const check = canSendNotification(invoice.lastWhatsAppSentAt, 48);
+    if (!check.canSend) {
+      return res.status(400).json({ success: false, message: `WhatsApp already sent recently. Try again after ${check.remainingHours} hours.` });
+    }
+
+    // Format 'to' with +91 if 10-digit number
+    let formattedTo = String(to).replace(/[^\d+]/g, '');
+    if (!formattedTo.startsWith('+')) {
+      formattedTo = formattedTo.length === 10 ? '+91' + formattedTo : '+' + formattedTo;
+    }
+
+    const name = customerName || 'Customer';
+    const messageBody = `Dear ${name}, your invoice #${invoiceNumber} for amount Rs. ${amount} is due on ${dueDate}. Please arrange the payment. Thank you.`;
+
+    const result = await sendWhatsApp(formattedTo, messageBody);
+
+    if (result.success) {
+      invoice.lastWhatsAppSentAt = new Date();
+      await invoice.save();
+      return res.status(200).json({ success: true, message: "WhatsApp sent successfully", reqId: result.reqId });
+    } else {
+      console.error("WhatsApp Send Failed:", result.error);
+      // Return 400 (Bad Request) instead of 500 for third-party validation/sandbox errors
+      return res.status(400).json({ 
+        success: false, 
+        message: result.error || "Failed to send WhatsApp via Twilio", 
+        details: result.details || null
+      });
+    }
+  } catch (error) {
+    console.error("sendInvoiceWhatsApp unhandled exception:", error.message, error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

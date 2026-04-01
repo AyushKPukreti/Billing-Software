@@ -152,6 +152,7 @@ const invoiceSchema = new mongoose.Schema(
 
     lastSmsSentAt: { type: Date },
     lastEmailSentAt: { type: Date },
+    lastWhatsAppSentAt: { type: Date },
 
     businessType: {
       type: String,
