@@ -277,6 +277,10 @@ export const addClient = async (req, res) => {
       return res.status(400).json({ message: "Company name is required." });
     }
 
+    if (phone && !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ message: "Enter a valid 10-digit Indian mobile number" });
+    }
+
     // check for existing client with same name and email for this user
     const existingClient = await ClientModel.findOne({
       user: userId,
@@ -323,6 +327,10 @@ export const editClient = async (req, res) => {
     const clientId = req.params.id;
 
     const { companyName, address, email, phone, gstNumber, notes } = req.body;
+
+    if (phone && !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ message: "Enter a valid 10-digit Indian mobile number" });
+    }
 
     // Fetch the client
     const client = await ClientModel.findOne({ _id: clientId, user: userId });
