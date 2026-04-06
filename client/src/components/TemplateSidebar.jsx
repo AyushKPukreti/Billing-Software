@@ -1,15 +1,16 @@
-import React from "react";
+import React, { useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Check } from "lucide-react";
+import { UserContext } from "../context/userContext";
 
 const templates = [
-  { id: "template1", name: "Template 1" },
-  { id: "template2", name: "Template 2" },
-  { id: "template3", name: "Template 3" },
-  { id: "template4", name: "Template 4" },
-  { id: "template5", name: "Template 5" },
-  { id: "template6", name: "Template 6" },
-  { id: "template7", name: "Template 7" },
+  { id: "Template1PDF", name: "Template 1" },
+  { id: "Template2PDF", name: "Template 2" },
+  { id: "Template3PDF", name: "Template 3" },
+  { id: "Template4PDF", name: "Template 4" },
+  { id: "Template5PDF", name: "Template 5" },
+  { id: "Template6PDF", name: "Template 6" },
+  { id: "Template7PDF", name: "Template 7" },
 ];
 
 const TemplateSidebar = ({
@@ -18,6 +19,20 @@ const TemplateSidebar = ({
   sidebarOpen,
   setSidebarOpen,
 }) => {
+  const { currentUser } = useContext(UserContext);
+  
+  let availableTemplates = templates;
+  if (currentUser?.allowedTemplates && currentUser.allowedTemplates.length > 0) {
+    availableTemplates = templates.filter(tpl => currentUser.allowedTemplates.includes(tpl.id));
+  } else if (currentUser?.allowedTemplates && currentUser.allowedTemplates.length === 0) {
+    availableTemplates = [templates[0]];
+  }
+
+  // Debug logs
+  console.log("User allowedTemplates:", currentUser?.allowedTemplates);
+  console.log("All templates:", templates);
+  console.log("Filtered templates:", availableTemplates);
+  
   return (
     <AnimatePresence>
       {sidebarOpen && (
@@ -67,7 +82,7 @@ const TemplateSidebar = ({
               className="flex flex-col"
               style={{ padding: "1rem", gap: "0.75rem" }}
             >
-              {templates.map((tpl) => (
+              {availableTemplates.map((tpl) => (
                 <li
                   key={tpl.id}
                   className={`rounded cursor-pointer transition-all duration-200 relative ${

@@ -162,6 +162,7 @@ const userSchema = new mongoose.Schema(
     },
     logoUrl: { type: String, default: '' },
     signatureUrl: { type: String, default: '' },
+    allowedTemplates: { type: [String], default: undefined },
   },
   {
     timestamps: true,

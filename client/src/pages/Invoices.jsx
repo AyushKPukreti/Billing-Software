@@ -20,6 +20,12 @@ import AppleDataTable from "../components/AppleDataTable";
 import emailjs from '@emailjs/browser';
 import { pdf } from "@react-pdf/renderer";
 import Template1PDF from "../templates/Template1PDF";
+import Template2PDF from "../templates/Template2PDF";
+import Template3PDF from "../templates/Template3PDF";
+import Template4PDF from "../templates/Template4PDF";
+import Template5PDF from "../templates/Template5PDF";
+import Template6PDF from "../templates/Template6PDF";
+import Template7PDF from "../templates/Template7PDF";
 import { numberToWords } from "../utils/numberToWords";
 import { UserContext } from "../context/userContext";
 axios.defaults.withCredentials = true;
@@ -139,14 +145,38 @@ const Invoices = () => {
           } catch (_) { /* silently skip logo if fetch fails */ }
         }
 
-        const pdfDoc = (
-          <Template1PDF
-            invoiceData={fullInvoice}
-            numberToWords={numberToWords}
-            currentUser={currentUser}
-            logoBase64={logoBase64}
-          />
-        );
+        let safeTemplate = "Template1PDF";
+        if (currentUser?.allowedTemplates) {
+          if (currentUser.allowedTemplates.length > 0) {
+            safeTemplate = currentUser.allowedTemplates[0];
+          }
+        }
+        
+        let pdfDoc;
+        switch (safeTemplate) {
+          case "Template2PDF":
+            pdfDoc = <Template2PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template3PDF":
+            pdfDoc = <Template3PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template4PDF":
+            pdfDoc = <Template4PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template5PDF":
+            pdfDoc = <Template5PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template6PDF":
+            pdfDoc = <Template6PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} logoBase64={logoBase64} />;
+            break;
+          case "Template7PDF":
+            pdfDoc = <Template7PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template1PDF":
+          default:
+            pdfDoc = <Template1PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} logoBase64={logoBase64} />;
+            break;
+        }
         const blob = await pdf(pdfDoc).toBlob();
 
         // Convert blob to Base64 string
