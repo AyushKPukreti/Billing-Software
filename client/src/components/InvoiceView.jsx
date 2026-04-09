@@ -37,9 +37,13 @@ const InvoiceView = () => {
   useEffect(() => {
     const fetchSignatureAsBase64 = async () => {
       const sigUrl = currentUser?.signatureUrl;
-      if (!sigUrl) return;
+      if (!sigUrl) {
+        setSignatureBase64(null);
+        return;
+      }
       try {
-        const response = await fetch(sigUrl);
+        const cacheBusterUrl = sigUrl + (sigUrl.includes('?') ? '&' : '?') + `cb=${new Date().getTime()}`;
+        const response = await fetch(cacheBusterUrl);
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => setSignatureBase64(reader.result);
@@ -55,9 +59,13 @@ const InvoiceView = () => {
   useEffect(() => {
     const fetchLogoAsBase64 = async () => {
       const logoUrl = currentUser?.logoUrl;
-      if (!logoUrl) return;
+      if (!logoUrl) {
+        setLogoBase64(null);
+        return;
+      }
       try {
-        const response = await fetch(logoUrl);
+        const cacheBusterUrl = logoUrl + (logoUrl.includes('?') ? '&' : '?') + `cb=${new Date().getTime()}`;
+        const response = await fetch(cacheBusterUrl);
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => setLogoBase64(reader.result);

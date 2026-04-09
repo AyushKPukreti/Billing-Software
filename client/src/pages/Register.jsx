@@ -3,6 +3,14 @@ import axios from "axios";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { 
+  FileText, 
+  BarChart2, 
+  ShieldCheck, 
+  ArrowRight
+} from "lucide-react";
+
+import logoSrc from "../assets/logo.png";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -291,7 +299,7 @@ const Register = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.name ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your full name"
@@ -319,7 +327,7 @@ const Register = () => {
                 value={formData.businessName}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.businessName ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your business name"
@@ -358,7 +366,7 @@ const Register = () => {
                   value={formData.countryCode}
                   onChange={handleInputChange}
                   style={{ padding: "0.75rem 0.75rem", borderRightWidth: 0 }}
-                  className="border rounded-l-lg border-gray-300 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-slack-purple focus:border-transparent"
+                  className="border rounded-l-lg border-gray-300 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                 >
                   {countryCodes.map(({ code, country }) => (
                     <option key={code} value={code}>
@@ -379,7 +387,7 @@ const Register = () => {
                     }
                   }}
                   style={{ flex: 1, padding: "0.75rem 1rem" }}
-                  className={`border rounded-r-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-r-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter phone number"
@@ -408,7 +416,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your email address"
@@ -447,7 +455,7 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Create a password"
@@ -475,7 +483,7 @@ const Register = () => {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.confirmPassword ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Confirm your password"
@@ -514,7 +522,7 @@ const Register = () => {
                 value={formData.address.street}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.address?.street ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Street address"
@@ -549,7 +557,7 @@ const Register = () => {
                   value={formData.address.city}
                   onChange={handleInputChange}
                   style={{ width: "100%", padding: "0.75rem 1rem" }}
-                  className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.address?.city ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="City"
@@ -577,7 +585,7 @@ const Register = () => {
                   value={formData.address.state}
                   onChange={handleInputChange}
                   style={{ width: "100%", padding: "0.75rem 1rem" }}
-                  className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.address?.state ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="State"
@@ -613,7 +621,7 @@ const Register = () => {
                   value={formData.address.zipCode}
                   onChange={handleInputChange}
                   style={{ width: "100%", padding: "0.75rem 1rem" }}
-                  className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.address?.zipCode
                       ? "border-red-500"
                       : "border-gray-300"
@@ -643,7 +651,7 @@ const Register = () => {
                   value={formData.address.country}
                   onChange={handleInputChange}
                   style={{ width: "100%", padding: "0.75rem 1rem" }}
-                  className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.address?.country
                       ? "border-red-500"
                       : "border-gray-300"
@@ -674,7 +682,7 @@ const Register = () => {
                 value={formData.taxId}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.taxId ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your tax ID"
@@ -702,7 +710,7 @@ const Register = () => {
                 value={formData.udyamNo}
                 onChange={handleInputChange}
                 style={{ width: "100%", padding: "0.75rem 1rem" }}
-                className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                   errors.udyamNo ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter UDYAM-XX-XX-XXXXXXX"
@@ -740,7 +748,7 @@ const Register = () => {
                   value={formData.hsnCode}
                   onChange={handleInputChange}
                   style={{ width: "100%", padding: "0.75rem 1rem" }}
-                  className={`border rounded-lg focus:ring-2 focus:ring-slack-purple focus:border-transparent transition-all ${
+                  className={`border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
                     errors.hsnCode ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="HSN / SAC Code"
@@ -782,8 +790,8 @@ const Register = () => {
                     onClick={() => handleMultiSelect("businessType", type)}
                     className={`text-left border rounded-lg transition-all ${
                       formData.businessType.includes(type)
-                        ? "border-slack-purple text-slack-purple"
-                        : "border-gray-300 hover:border-slack-purple"
+                        ? "border-blue-600 text-blue-600"
+                        : "border-gray-300 hover:border-blue-600"
                     }`}
                     style={{
                       textTransform: "uppercase",
@@ -824,8 +832,8 @@ const Register = () => {
                     }
                     className={`text-left border rounded-lg transition-all ${
                       formData.preferredPrintFormat.includes(format)
-                        ? "border-slack-purple text-slack-purple"
-                        : "border-gray-300 hover:border-slack-purple"
+                        ? "border-blue-600 text-blue-600"
+                        : "border-gray-300 hover:border-blue-600"
                     }`}
                     style={{
                       textTransform: "uppercase",
@@ -859,33 +867,88 @@ const Register = () => {
   };
 
   return (
-    <div
-      style={{ minHeight: "100vh", padding: "3rem 1rem" }}
-      className="flex items-center justify-center"
-    >
-      <div
-        className="max-w-md w-full"
-        style={{ rowGap: "2rem", display: "flex", flexDirection: "column" }}
+    <div className="min-h-screen flex w-full" style={{ backgroundColor: "var(--bg-page)" }}>
+      {/* LEFT SIDE - Info Panel (Glass / Subtle Gradient) */}
+      <div 
+        className="hidden md:flex md:w-1/2 flex-col justify-center items-center relative overflow-hidden"
+        style={{ 
+          paddingLeft: "3rem", 
+          paddingRight: "3rem",
+          background: "linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)",
+          borderRight: "1px solid rgba(255,255,255,0.4)"
+        }}
       >
-        <div>
-          <div
-            style={{ marginLeft: "auto", marginRight: "auto" }}
-            className="h-12 w-12 bg-slack-purple rounded-lg flex items-center justify-center"
-          >
-            <svg
-              className="h-8 w-8 text-white"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 3C6.686 3 4 5.686 4 9v2.5A1.5 1.5 0 005.5 13h.5c.276 0 .5-.224.5-.5s-.224-.5-.5-.5h-.5a.5.5 0 01-.5-.5V9c0-2.757 2.243-5 5-5s5 2.243 5 5v2.5a.5.5 0 01-.5.5h-.5c-.276 0-.5.224-.5.5s.224.5.5.5h.5a1.5 1.5 0 001.5-1.5V9c0-3.314-2.686-6-6-6z"
-                clipRule="evenodd"
-              />
-            </svg>
+        {/* Subtle decorative background shapes */}
+        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(60px)" }}></div>
+        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "30vw", height: "30vw", background: "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(60px)" }}></div>
+
+        <div className="w-full max-w-lg relative z-10">
+          {/* Logo block */}
+          <div className="flex items-center" style={{ gap: "1rem", marginBottom: "3rem" }}>
+            <img src={logoSrc} alt="ARM Technologies Logo" style={{ height: "48px", width: "48px", objectFit: "contain" }} />
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+              ARM Technologies
+            </h1>
           </div>
 
+          <h2 className="text-[2.25rem] font-bold text-gray-900 leading-tight tracking-tight" style={{ marginBottom: "1rem" }}>
+            Welcome to Excellence.
+          </h2>
+          <p className="text-[1.1rem] font-medium text-gray-600" style={{ marginBottom: "3rem", lineHeight: "1.6" }}>
+            Streamline your billing, manage client ledgers, and automate notifications effortlessly with a premium experience.
+          </p>
+
+          <div className="flex flex-col" style={{ gap: "2rem" }}>
+            {/* Feature 1 */}
+            <div className="flex items-start" style={{ gap: "1.25rem" }}>
+              <div className="shrink-0" style={{ padding: "0.75rem", marginTop: "0.25rem", background: "var(--surface)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", border: "1px solid rgba(255,255,255,1)" }}>
+                <FileText style={{ width: "20px", height: "20px", color: "var(--color-primary)" }} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-[1rem] leading-tight">Professional Invoicing</h3>
+                <p className="text-[0.95rem] text-gray-500" style={{ marginTop: "0.25rem" }}>Generate elegant, GST-ready invoices and estimates instantly.</p>
+              </div>
+            </div>
+            {/* Feature 2 */}
+            <div className="flex items-start" style={{ gap: "1.25rem" }}>
+              <div className="shrink-0" style={{ padding: "0.75rem", marginTop: "0.25rem", background: "var(--surface)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", border: "1px solid rgba(255,255,255,1)" }}>
+                <BarChart2 style={{ width: "20px", height: "20px", color: "var(--color-primary)" }} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-[1rem] leading-tight">Comprehensive Ledgers</h3>
+                <p className="text-[0.95rem] text-gray-500" style={{ marginTop: "0.25rem" }}>Keep track of client balances and payment histories automatically.</p>
+              </div>
+            </div>
+            {/* Feature 3 */}
+            <div className="flex items-start" style={{ gap: "1.25rem" }}>
+              <div className="shrink-0" style={{ padding: "0.75rem", marginTop: "0.25rem", background: "var(--surface)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", border: "1px solid rgba(255,255,255,1)" }}>
+                <ShieldCheck style={{ width: "20px", height: "20px", color: "var(--color-primary)" }} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-[1rem] leading-tight">Smart Notifications</h3>
+                <p className="text-[0.95rem] text-gray-500" style={{ marginTop: "0.25rem" }}>Send automated payment reminders via WhatsApp, SMS, and Email.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE - Form Panel */}
+      <div 
+        className="w-full md:w-1/2 flex flex-col justify-center items-center"
+        style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem", background: "var(--surface)", paddingBottom: "2rem", paddingTop: "2rem" }}
+      >
+        <div
+          className="w-full max-w-md"
+          style={{ rowGap: "1.5rem", display: "flex", flexDirection: "column" }}
+        >
+          {/* Mobile Logo for smaller screens */}
+          <div className="flex md:hidden items-center" style={{ gap: "0.75rem", marginBottom: "1rem", marginTop: "1rem", justifyContent: "center" }}>
+            <img src={logoSrc} alt="ARM Technologies Logo" style={{ height: "40px", width: "40px", objectFit: "contain" }} />
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">ARM Technologies</h1>
+          </div>
+
+          <div>
           <h2
             className="text-center text-3xl font-extrabold text-gray-900"
             style={{ marginTop: "1.5rem" }}
@@ -907,7 +970,7 @@ const Register = () => {
           style={{ height: "0.5rem" }}
         >
           <div
-            className="bg-slack-purple rounded-full transition-all duration-300 ease-out"
+            className="bg-blue-600 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progress}%`, height: "0.5rem" }}
           />
         </div>
@@ -943,8 +1006,8 @@ const Register = () => {
               <button
                 type="button"
                 onClick={handlePrev}
-                className="flex justify-center border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slack-purple transition-all"
-                style={{ padding: "0.75rem 1.5rem" }}
+                className="app-card"
+                style={{ padding: "0.75rem 1.5rem", border: "1px solid var(--border)", background: "transparent", color: "var(--text-primary)", fontWeight: 500 }}
               >
                 Previous
               </button>
@@ -956,7 +1019,7 @@ const Register = () => {
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex justify-center border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slack-purple hover:bg-slack-purple hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slack-purple transition-all"
+                className="btn-primary"
                 style={{ padding: "0.75rem 1.5rem" }}
               >
                 Next
@@ -965,12 +1028,8 @@ const Register = () => {
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="flex justify-center border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all"
-                style={{
-                  padding: "0.75rem 1.5rem",
-                  backgroundColor: "#007A5A",
-                  focusRingColor: "#007A5A",
-                }}
+                className="btn-primary"
+                style={{ padding: "0.75rem 1.5rem" }}
                 disabled={loading}
               >
                 {loading ? "Registering..." : "Complete Registration"}
@@ -982,7 +1041,7 @@ const Register = () => {
             <button
               type="button"
               onClick={() => navigate("/login")}
-              className="text-slack-purple hover:underline text-sm"
+              className="text-blue-600 hover:underline text-sm"
               style={{ marginTop: "0.5rem" }}
             >
               Already have an account? Sign in
@@ -990,6 +1049,7 @@ const Register = () => {
           </div>
         </form>
       </div>
+     </div>
     </div>
   );
 };

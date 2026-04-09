@@ -822,36 +822,9 @@ const Invoices = () => {
         </div>
         <Link
           to="/invoices/create"
-          className="invoices-create-btn"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '12px',
-            background: 'var(--accent, #0071E3)',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: 600,
-            textDecoration: 'none',
-            transition: 'all 200ms ease',
-            boxShadow: '0 1px 3px rgba(0, 113, 227, 0.3)',
-            border: 'none',
-            letterSpacing: '-0.006em',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--accent-hover, #0077ED)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 113, 227, 0.35)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--accent, #0071E3)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 113, 227, 0.3)';
-          }}
+          className="btn-primary"
         >
-          <Plus style={{ width: '16px', height: '16px' }} />
+          <Plus style={{ width: '18px', height: '18px', marginRight: '4px' }} />
           Create Invoice
         </Link>
       </div>
@@ -1007,22 +980,9 @@ const Invoices = () => {
           yearFilter === "all" && (
             <Link
               to="/invoices/create"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                borderRadius: '12px',
-                background: 'var(--accent, #0071E3)',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                transition: 'all 200ms ease',
-                boxShadow: '0 1px 3px rgba(0, 113, 227, 0.3)',
-              }}
+              className="btn-primary"
             >
-              <Plus style={{ width: '16px', height: '16px' }} />
+              <Plus style={{ width: '18px', height: '18px', marginRight: '4px' }} />
               Create Invoice
             </Link>
           )
