@@ -13,7 +13,7 @@ import {
   Package,
 } from "lucide-react";
 import { UserContext } from "../context/userContext";
-import logoSrc from "../assets/logo.png";
+import logoSrc from "../assets/logo.jpeg";
 
 const Layout = () => {
   const location = useLocation();
