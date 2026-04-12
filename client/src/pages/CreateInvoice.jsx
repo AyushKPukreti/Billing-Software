@@ -246,7 +246,7 @@ const CreateInvoice = () => {
             ? {
                 ...item,
                 service: serviceId,
-                description: selectedService.name,
+                description: selectedService.description || selectedService.name,
                 hsnCode: selectedService.hsnCode,
                 unitType: selectedService.unitType,
                 pricingType: selectedService.pricingType,

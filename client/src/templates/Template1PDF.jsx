@@ -238,16 +238,33 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
               <Text style={s.businessName}>
                 {currentUser?.businessName?.toUpperCase() || ""}
               </Text>
+              <View style={{ width: "100%" }}>
+                <Text style={s.headerDetails}>Office: </Text>
+                {((currentUser?.address?.street || ""))
+                  .replace(/(.{60})/g, "$1\n")
+                  .split("\n")
+                  .filter((l) => l.trim().length > 0)
+                  .map((line, i) => (
+                    <Text key={`off1-${i}`} style={s.headerDetails}>
+                      {line}
+                    </Text>
+                  ))}
+                <Text style={s.headerDetails}>
+                  {currentUser?.address?.city || ""}, {currentUser?.address?.state || ""} - {currentUser?.address?.zipCode || ""}
+                </Text>
+              </View>
               <Text style={s.headerDetails}>
-                Office: {currentUser?.address?.street || ""}{" "}
-                {currentUser?.address?.city || ""}, {currentUser?.address?.state || ""} -{" "}
-                {currentUser?.address?.zipCode || ""}
+                Phone: {currentUser?.phone || ""} | Email: {currentUser?.email || ""} | {currentUser?.taxId ? `GSTIN/UIN: ${currentUser.taxId}` : ""}
               </Text>
-              <Text style={s.headerDetails}>
-                Phone: {currentUser?.phone || ""} | Email: {currentUser?.email || ""}
-                {currentUser?.taxId ? ` | GSTIN/UIN: ${currentUser.taxId}` : ""}
-                {currentUser?.udyamNo ? ` | Udyam No.: ${currentUser.udyamNo}` : ""}
-              </Text>
+              {(currentUser?.taxId || currentUser?.udyamNo || currentUser?.panNumber) && (
+                <Text style={s.headerDetails}>
+                  {/* {currentUser?.taxId ? `GSTIN/UIN: ${currentUser.taxId}` : ""} */}
+                  {currentUser?.taxId && (currentUser?.udyamNo || currentUser?.panNumber) ? " | " : ""}
+                  {currentUser?.udyamNo ? `Udyam No.: ${currentUser.udyamNo}` : ""}
+                  {currentUser?.udyamNo && currentUser?.panNumber ? " | " : ""}
+                  {currentUser?.panNumber ? `PAN: ${currentUser.panNumber}` : ""}
+                </Text>
+              )}
             </View>
           </View>
         ) : (
@@ -256,16 +273,33 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
               <Text style={s.businessName}>
                 {currentUser?.businessName?.toUpperCase() || ""}
               </Text>
-              <Text style={s.headerDetails}>
-                Office: {currentUser?.address?.street || ""}{" "}
-                {currentUser?.address?.city || ""}, {currentUser?.address?.state || ""} -{" "}
-                {currentUser?.address?.zipCode || ""}
-              </Text>
+              <View style={{ width: "100%" }}>
+                <Text style={s.headerDetails}>Office: </Text>
+                {((currentUser?.address?.street || ""))
+                  .replace(/(.{60})/g, "$1\n")
+                  .split("\n")
+                  .filter((l) => l.trim().length > 0)
+                  .map((line, i) => (
+                    <Text key={`off2-${i}`} style={s.headerDetails}>
+                      {line}
+                    </Text>
+                  ))}
+                <Text style={s.headerDetails}>
+                  {currentUser?.address?.city || ""}, {currentUser?.address?.state || ""} - {currentUser?.address?.zipCode || ""}
+                </Text>
+              </View>
               <Text style={s.headerDetails}>
                 Phone: {currentUser?.phone || ""} | Email: {currentUser?.email || ""}
-                {currentUser?.taxId ? ` | GSTIN/UIN: ${currentUser.taxId}` : ""}
-                {currentUser?.udyamNo ? ` | Udyam No.: ${currentUser.udyamNo}` : ""}
               </Text>
+              {(currentUser?.taxId || currentUser?.udyamNo || currentUser?.panNumber) && (
+                <Text style={s.headerDetails}>
+                  {currentUser?.taxId ? `GSTIN/UIN: ${currentUser.taxId}` : ""}
+                  {currentUser?.taxId && (currentUser?.udyamNo || currentUser?.panNumber) ? " | " : ""}
+                  {currentUser?.udyamNo ? `Udyam No.: ${currentUser.udyamNo}` : ""}
+                  {currentUser?.udyamNo && currentUser?.panNumber ? " | " : ""}
+                  {currentUser?.panNumber ? `PAN: ${currentUser.panNumber}` : ""}
+                </Text>
+              )}
             </View>
           </View>
         )}
@@ -274,9 +308,14 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
         <View style={[s.titleBlock, { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }]}>
           <View style={{ flex: 1, alignItems: "flex-start", paddingTop: 4 }}>
             {invoiceData.shippingAddress && (
-              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
-                Invoice No: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceNumber || "-"}</Text>
-              </Text>
+              <>
+                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 2 }}>
+                  Invoice No: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceNumber || "-"}</Text>
+                </Text>
+                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
+                  Invoice Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}</Text>
+                </Text>
+              </>
             )}
           </View>
 
@@ -287,14 +326,9 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
 
           <View style={{ flex: 1, alignItems: "flex-end", paddingTop: 4 }}>
             {invoiceData.shippingAddress && (
-              <>
-                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 2 }}>
-                  Invoice Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate).toLocaleDateString("en-GB") : "-"}</Text>
-                </Text>
-                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
-                  Due Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString("en-GB") : "-"}</Text>
-                </Text>
-              </>
+              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold" }}>
+                Due Date: <Text style={{ fontFamily: "Helvetica" }}>{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString("en-GB") : "-"}</Text>
+              </Text>
             )}
           </View>
         </View>
@@ -305,14 +339,29 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
           <View style={[s.billToBox, { flex: 1 }]}>
             <Text style={s.billToLabel}>Bill To:</Text>
             <Text style={s.clientName}>{invoiceData.client?.companyName || ""}</Text>
-            <Text style={s.bodyText}>{invoiceData.client?.address?.street || ""}</Text>
-            <Text style={s.bodyText}>
-              {invoiceData.client?.address?.city || ""},{" "}
-              {invoiceData.client?.address?.state || ""} -{" "}
-              {invoiceData.client?.address?.zipCode || ""}
-            </Text>
+            <View style={{ width: "100%" }}>
+              {((invoiceData.client?.address?.street || ""))
+                .replace(/(.{50})/g, "$1\n")
+                .split("\n")
+                .filter((l) => l.trim().length > 0)
+                .map((line, i) => (
+                  <Text key={`bill-${i}`} style={s.bodyText}>
+                    {line}
+                  </Text>
+                ))}
+            </View>
+            <View style={{ width: "100%" }}>
+              <Text style={s.bodyText}>
+                {invoiceData.client?.address?.city || ""},{" "}
+                {invoiceData.client?.address?.state || ""} -{" "}
+                {invoiceData.client?.address?.zipCode || ""}
+              </Text>
+            </View>
             {invoiceData.client?.gstNumber && (
               <Text style={s.bodyText}>GSTIN/UIN: {invoiceData.client.gstNumber}</Text>
+            )}
+            {invoiceData.client?.panNumber && (
+              <Text style={s.bodyText}>PAN: {invoiceData.client.panNumber}</Text>
             )}
             <Text style={s.bodyText}>
               State Name: {invoiceData.client?.address?.state || ""}, Code:{" "}
@@ -325,26 +374,46 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
             <View style={[s.billToBox, { flex: 1 }]}>
               <Text style={s.billToLabel}>Ship To:</Text>
               {typeof invoiceData.shippingAddress === "string" ? (
-                invoiceData.shippingAddress.split("\n").map((line, i) => (
-                  <Text key={i} style={s.bodyText}>
-                    {line}
-                  </Text>
+                invoiceData.shippingAddress.split("\n").map((chunk, chunkIdx) => (
+                  <View key={chunkIdx} style={{ width: "100%" }}>
+                    {((chunk || ""))
+                      .replace(/(.{50})/g, "$1\n")
+                      .split("\n")
+                      .filter((l) => l.trim().length > 0)
+                      .map((line, i) => (
+                        <Text key={`str-${chunkIdx}-${i}`} style={s.bodyText}>
+                          {line}
+                        </Text>
+                      ))}
+                  </View>
                 ))
               ) : (
                 <>
                   {invoiceData.shippingAddress.street && (
-                    <Text style={s.bodyText}>{invoiceData.shippingAddress.street}</Text>
+                    <View style={{ width: "100%" }}>
+                      {((invoiceData.shippingAddress.street || ""))
+                        .replace(/(.{50})/g, "$1\n")
+                        .split("\n")
+                        .filter((l) => l.trim().length > 0)
+                        .map((line, i) => (
+                          <Text key={`ship-${i}`} style={s.bodyText}>
+                            {line}
+                          </Text>
+                        ))}
+                    </View>
                   )}
                   {(invoiceData.shippingAddress.city || invoiceData.shippingAddress.state || invoiceData.shippingAddress.zipCode) && (
-                    <Text style={s.bodyText}>
-                      {[
-                        invoiceData.shippingAddress.city,
-                        invoiceData.shippingAddress.state,
-                        invoiceData.shippingAddress.zipCode,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </Text>
+                    <View style={{ width: "100%" }}>
+                      <Text style={s.bodyText}>
+                        {[
+                          invoiceData.shippingAddress.city,
+                          invoiceData.shippingAddress.state,
+                          invoiceData.shippingAddress.zipCode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </Text>
+                    </View>
                   )}
                 </>
               )}

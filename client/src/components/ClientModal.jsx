@@ -13,6 +13,7 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
     phone: "",
     address: { street: "", city: "", state: "", zipCode: "", country: "India" },
     gstNumber: "",
+    panNumber: "",
     notes: "",
   };
 
@@ -33,8 +34,17 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
 
   const validateStep = () => {
     const stepErrors = {};
-    if (step === 1 && !formData.companyName.trim()) {
-      stepErrors.companyName = "Company name is required";
+    if (step === 1) {
+      if (!formData.companyName.trim()) {
+        stepErrors.companyName = "Company name is required";
+      }
+      if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone)) {
+        stepErrors.phone = "Enter a valid 10-digit Indian mobile number";
+      }
+    } else if (step === 2) {
+      if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+        stepErrors.panNumber = "Enter a valid PAN Card Number";
+      }
     }
     setErrors(stepErrors);
     return Object.keys(stepErrors).length === 0;
@@ -42,7 +52,33 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith("address.")) {
+    if (name === "phone") {
+      const sanitized = value.replace(/\D/g, "").slice(0, 10);
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+      
+      if (sanitized && !/^[6-9]\d{9}$/.test(sanitized)) {
+        setErrors((prev) => ({ ...prev, phone: "Enter a valid 10-digit Indian mobile number" }));
+      } else {
+        setErrors((prev) => {
+          const newE = { ...prev };
+          delete newE.phone;
+          return newE;
+        });
+      }
+    } else if (name === "panNumber") {
+      const upValue = value.toUpperCase();
+      setFormData((prev) => ({ ...prev, [name]: upValue }));
+      
+      if (upValue && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upValue)) {
+        setErrors((prev) => ({ ...prev, panNumber: "Enter a valid PAN Card Number" }));
+      } else {
+        setErrors((prev) => {
+          const newE = { ...prev };
+          delete newE.panNumber;
+          return newE;
+        });
+      }
+    } else if (name.startsWith("address.")) {
       const addressField = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
@@ -305,16 +341,38 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    style={inputStyle}
+                    style={{
+                      ...inputStyle,
+                      borderColor: errors.phone ? "#DC2626" : "var(--border, #E5E5E7)",
+                    }}
                     onFocus={(e) => {
-                      e.currentTarget.style.borderColor = "var(--accent, #0071E3)";
-                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0, 113, 227, 0.12)";
+                      if (!errors.phone) {
+                        e.currentTarget.style.borderColor = "var(--accent, #0071E3)";
+                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0, 113, 227, 0.12)";
+                      } else {
+                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.12)";
+                      }
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border, #E5E5E7)";
+                      e.currentTarget.style.borderColor = errors.phone ? "#DC2626" : "var(--border, #E5E5E7)";
                       e.currentTarget.style.boxShadow = "none";
+                      
+                      if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone)) {
+                        setErrors((prev) => ({ ...prev, phone: "Enter a valid 10-digit Indian mobile number" }));
+                      } else {
+                        setErrors((prev) => {
+                          const newE = { ...prev };
+                          delete newE.phone;
+                          return newE;
+                        });
+                      }
                     }}
                   />
+                  {errors.phone && (
+                    <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
+                      {errors.phone}
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -430,6 +488,37 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
                       }}
                     />
                   </div>
+                  <div style={{ gridColumn: "1 / -1", marginTop: "4px" }}>
+                    <label style={labelStyle}>PAN Card Number</label>
+                    <input
+                      type="text"
+                      name="panNumber"
+                      value={formData.panNumber}
+                      onChange={handleInputChange}
+                      style={{
+                        ...inputStyle,
+                        borderColor: errors.panNumber ? "#DC2626" : "var(--border, #E5E5E7)",
+                      }}
+                      onFocus={(e) => {
+                        if (!errors.panNumber) {
+                          e.currentTarget.style.borderColor = "var(--accent, #0071E3)";
+                          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0, 113, 227, 0.12)";
+                        } else {
+                          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.12)";
+                        }
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = errors.panNumber ? "#DC2626" : "var(--border, #E5E5E7)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                      maxLength={10}
+                    />
+                    {errors.panNumber && (
+                      <p style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
+                        {errors.panNumber}
+                      </p>
+                    )}
+                  </div>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <label style={labelStyle}>Notes</label>
                     <textarea
@@ -513,16 +602,25 @@ const ClientModal = ({ isOpen, onClose, client, handleSaveClient }) => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  style={btnPrimary}
+                  disabled={Object.keys(errors).length > 0}
+                  style={{
+                    ...btnPrimary,
+                    opacity: Object.keys(errors).length > 0 ? 0.6 : 1,
+                    cursor: Object.keys(errors).length > 0 ? "not-allowed" : "pointer"
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--accent-hover, #0077ED)";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 113, 227, 0.35)";
+                    if (Object.keys(errors).length === 0) {
+                      e.currentTarget.style.background = "var(--accent-hover, #0077ED)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 113, 227, 0.35)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--accent, #0071E3)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 113, 227, 0.3)";
+                    if (Object.keys(errors).length === 0) {
+                      e.currentTarget.style.background = "var(--accent, #0071E3)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 113, 227, 0.3)";
+                    }
                   }}
                 >
                   Next Step

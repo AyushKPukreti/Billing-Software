@@ -20,6 +20,12 @@ import AppleDataTable from "../components/AppleDataTable";
 import emailjs from '@emailjs/browser';
 import { pdf } from "@react-pdf/renderer";
 import Template1PDF from "../templates/Template1PDF";
+import Template2PDF from "../templates/Template2PDF";
+import Template3PDF from "../templates/Template3PDF";
+import Template4PDF from "../templates/Template4PDF";
+import Template5PDF from "../templates/Template5PDF";
+import Template6PDF from "../templates/Template6PDF";
+import Template7PDF from "../templates/Template7PDF";
 import { numberToWords } from "../utils/numberToWords";
 import { UserContext } from "../context/userContext";
 axios.defaults.withCredentials = true;
@@ -77,7 +83,7 @@ const Invoices = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [notificationTypes, setNotificationTypes] = useState({ email: true, sms: false });
+  const [notificationTypes, setNotificationTypes] = useState({ email: true, sms: false, whatsapp: false });
 
   const handleOpenEmailModal = (invoice) => {
     setEmailInvoice(invoice);
@@ -85,7 +91,8 @@ const Invoices = () => {
     // Auto-select SMS if email is missing, otherwise default to email
     setNotificationTypes({ 
       email: !!invoice.client?.email, 
-      sms: !!invoice.client?.phone 
+      sms: !!invoice.client?.phone,
+      whatsapp: !!invoice.client?.phone
     });
   };
 
@@ -102,16 +109,16 @@ const Invoices = () => {
       return;
     }
 
-    if (!notificationTypes.email && !notificationTypes.sms) {
+    if (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp) {
       toast.error("Please select at least one notification method.");
       return;
     }
 
     setIsSendingEmail(true);
     try {
-      const serviceId = '';
-      const templateId = '';
-      const publicKey = '';
+      const serviceId = 'service_pz0xzv8';
+      const templateId = 'template_p9ttwae';
+      const publicKey = 'x1_RUwD-1cdvAc52E';
 
       // ── Generate PDF blob and convert to Base64 ──
       let pdfBase64 = "";
@@ -138,14 +145,38 @@ const Invoices = () => {
           } catch (_) { /* silently skip logo if fetch fails */ }
         }
 
-        const pdfDoc = (
-          <Template1PDF
-            invoiceData={fullInvoice}
-            numberToWords={numberToWords}
-            currentUser={currentUser}
-            logoBase64={logoBase64}
-          />
-        );
+        let safeTemplate = "Template1PDF";
+        if (currentUser?.allowedTemplates) {
+          if (currentUser.allowedTemplates.length > 0) {
+            safeTemplate = currentUser.allowedTemplates[0];
+          }
+        }
+        
+        let pdfDoc;
+        switch (safeTemplate) {
+          case "Template2PDF":
+            pdfDoc = <Template2PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template3PDF":
+            pdfDoc = <Template3PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template4PDF":
+            pdfDoc = <Template4PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template5PDF":
+            pdfDoc = <Template5PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template6PDF":
+            pdfDoc = <Template6PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} logoBase64={logoBase64} />;
+            break;
+          case "Template7PDF":
+            pdfDoc = <Template7PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} />;
+            break;
+          case "Template1PDF":
+          default:
+            pdfDoc = <Template1PDF invoiceData={fullInvoice} numberToWords={numberToWords} currentUser={currentUser} signatureBase64={null} logoBase64={logoBase64} />;
+            break;
+        }
         const blob = await pdf(pdfDoc).toBlob();
 
         // Convert blob to Base64 string
@@ -176,19 +207,35 @@ const Invoices = () => {
         amount: emailInvoice.totalAmount,
         due_date: emailInvoice.dueDate ? new Date(emailInvoice.dueDate).toLocaleDateString("en-GB") : "",
         business_name: currentUser?.businessName || "",
-        ...(pdfBase64 ? { invoice_pdf: pdfBase64 } : {}),
+        message: "Your invoice PDF has been generated and securely stored. Please reply to this email if you need a copy.",
       };
 
       // Send Email if selected
       if (notificationTypes.email) {
-        await emailjs.send(serviceId, templateId, templateParams, publicKey);
-        toast.success(`Email sent to ${emailInvoice.client.email}`);
+        try {
+          await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/check-email-cooldown`, { invoiceId: emailInvoice._id });
+          await emailjs.send(serviceId, templateId, templateParams, publicKey);
+          await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/log-email`, { invoiceId: emailInvoice._id });
+          toast.success(`Email sent to ${emailInvoice.client.email}`);
+        } catch (emailError) {
+          console.error("Email Error:", emailError);
+          const responseData = emailError.response?.data;
+          let errMsg = responseData?.message || "Failed to send Email.";
+          if (responseData?.nextAllowedAt) {
+            const dateObj = new Date(responseData.nextAllowedAt);
+            const formattedDate = dateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+            const formattedTime = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }).toUpperCase();
+            errMsg = `Email already sent recently. You can send again on ${formattedDate} at ${formattedTime}.`;
+          }
+          toast.error(errMsg);
+        }
       }
       
-      // Send SMS Notification via MSG91 if selected
+      // Send SMS Notification via Twilio if selected
       if (notificationTypes.sms && emailInvoice.client?.phone) {
         try {
           await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/send-sms`, {
+            invoiceId: emailInvoice._id,
             to: emailInvoice.client.phone,
             invoiceNumber: emailInvoice.invoiceNumber,
             amount: emailInvoice.totalAmount,
@@ -197,8 +244,42 @@ const Invoices = () => {
           });
           toast.success(`SMS reminder sent to ${emailInvoice.client.phone}`);
         } catch (smsError) {
-          console.error("MSG91 SMS Error:", smsError);
-          toast.error("Failed to send SMS reminder.");
+          console.error("Twilio SMS Error:", smsError);
+          const responseData = smsError.response?.data;
+          let errMsg = responseData?.message || "Failed to send SMS reminder.";
+          if (responseData?.nextAllowedAt) {
+            const dateObj = new Date(responseData.nextAllowedAt);
+            const formattedDate = dateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+            const formattedTime = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }).toUpperCase();
+            errMsg = `SMS already sent recently. You can send again on ${formattedDate} at ${formattedTime}.`;
+          }
+          toast.error(errMsg);
+        }
+      }
+
+      // Send WhatsApp Notification via Twilio if selected
+      if (notificationTypes.whatsapp && emailInvoice.client?.phone) {
+        try {
+          await axios.post(`${import.meta.env.VITE_BASE_URL}/notifications/send-whatsapp`, {
+            invoiceId: emailInvoice._id,
+            to: emailInvoice.client.phone,
+            invoiceNumber: emailInvoice.invoiceNumber,
+            amount: emailInvoice.totalAmount,
+            dueDate: templateParams.due_date,
+            customerName: templateParams.to_name
+          });
+          toast.success(`WhatsApp reminder sent to ${emailInvoice.client.phone}`);
+        } catch (waError) {
+          console.error("Twilio WhatsApp Error:", waError);
+          const responseData = waError.response?.data;
+          let errMsg = responseData?.message || "Failed to send WhatsApp reminder.";
+          if (responseData?.nextAllowedAt) {
+            const dateObj = new Date(responseData.nextAllowedAt);
+            const formattedDate = dateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+            const formattedTime = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }).toUpperCase();
+            errMsg = `WhatsApp already sent recently. You can send again on ${formattedDate} at ${formattedTime}.`;
+          }
+          toast.error(errMsg);
         }
       }
 
@@ -616,7 +697,7 @@ const Invoices = () => {
         </span>
       ),
     },
-    {
+    /* {
       key: 'notify',
       label: 'Notify',
       width: '7%',
@@ -655,7 +736,7 @@ const Invoices = () => {
           </button>
         );
       }
-    },
+    }, */
     {
       key: 'actions',
       label: '',
@@ -741,36 +822,9 @@ const Invoices = () => {
         </div>
         <Link
           to="/invoices/create"
-          className="invoices-create-btn"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '12px',
-            background: 'var(--accent, #0071E3)',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: 600,
-            textDecoration: 'none',
-            transition: 'all 200ms ease',
-            boxShadow: '0 1px 3px rgba(0, 113, 227, 0.3)',
-            border: 'none',
-            letterSpacing: '-0.006em',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--accent-hover, #0077ED)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 113, 227, 0.35)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--accent, #0071E3)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 113, 227, 0.3)';
-          }}
+          className="btn-primary"
         >
-          <Plus style={{ width: '16px', height: '16px' }} />
+          <Plus style={{ width: '18px', height: '18px', marginRight: '4px' }} />
           Create Invoice
         </Link>
       </div>
@@ -926,22 +980,9 @@ const Invoices = () => {
           yearFilter === "all" && (
             <Link
               to="/invoices/create"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                borderRadius: '12px',
-                background: 'var(--accent, #0071E3)',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                transition: 'all 200ms ease',
-                boxShadow: '0 1px 3px rgba(0, 113, 227, 0.3)',
-              }}
+              className="btn-primary"
             >
-              <Plus style={{ width: '16px', height: '16px' }} />
+              <Plus style={{ width: '18px', height: '18px', marginRight: '4px' }} />
               Create Invoice
             </Link>
           )
@@ -1007,6 +1048,24 @@ const Invoices = () => {
                   <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.phone || 'No phone number available'}</div>
                 </div>
               </label>
+
+              <label style={{ 
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                borderRadius: '10px', border: '1px solid #E5E5E7', cursor: (emailInvoice.client?.phone) ? 'pointer' : 'not-allowed',
+                background: notificationTypes.whatsapp ? '#F5F5F7' : '#fff',
+                opacity: emailInvoice.client?.phone ? 1 : 0.6
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={notificationTypes.whatsapp} 
+                  onChange={(e) => setNotificationTypes(prev => ({ ...prev, whatsapp: e.target.checked }))}
+                  disabled={!emailInvoice.client?.phone}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600 }}>Send via WhatsApp</div>
+                  <div style={{ fontSize: '12px', color: '#6E6E73' }}>{emailInvoice.client?.phone || 'No phone number available'}</div>
+                </div>
+              </label>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -1022,9 +1081,9 @@ const Invoices = () => {
                 style={{ 
                   padding: '10px 24px', borderRadius: '10px', border: 'none', 
                   background: '#0071E3', color: '#fff', cursor: 'pointer', fontWeight: 600,
-                  opacity: (isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)) ? 0.7 : 1
+                  opacity: (isSendingEmail || (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp)) ? 0.7 : 1
                 }}
-                disabled={isSendingEmail || (!notificationTypes.email && !notificationTypes.sms)}
+                disabled={isSendingEmail || (!notificationTypes.email && !notificationTypes.sms && !notificationTypes.whatsapp)}
               >
                 {isSendingEmail ? "Sending..." : "Send Now"}
               </button>

@@ -308,38 +308,9 @@ const Dashboard = () => {
           <div className="mt-4 sm:mt-0 flex">
             <Link
               to="/invoices/create"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                backgroundColor: tokens.colors.accent,
-                color: "#FFFFFF",
-                padding: "10px 20px",
-                borderRadius: tokens.radii.pill,
-                fontSize: "14px",
-                fontWeight: "600",
-                textDecoration: "none",
-                boxShadow: "0 2px 8px rgba(0, 113, 227, 0.24)",
-                transition: "all 200ms ease",
-              }}
-              onMouseEnter={(e) => {
-                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 113, 227, 0.32)";
-              }}
-              onMouseLeave={(e) => {
-                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                  e.currentTarget.style.transform = "none";
-                }
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 113, 227, 0.24)";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = `2px solid ${tokens.colors.accent}`;
-                e.currentTarget.style.outlineOffset = "2px";
-              }}
-              onBlur={(e) => e.currentTarget.style.outline = "none"}
+              className="btn-primary"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-5 w-5 mr-1" />
               Create Invoice
             </Link>
           </div>
@@ -353,36 +324,13 @@ const Dashboard = () => {
               <Link
                 key={index}
                 to={card.link}
+                className="app-card"
                 style={{
-                  backgroundColor: tokens.colors.bgSurface,
-                  borderRadius: tokens.radii.card,
                   padding: tokens.spacing.lg,
-                  border: `1px solid ${tokens.colors.borderLight}`,
-                  boxShadow: tokens.shadows.soft,
-                  transition: "all 150ms ease",
                   textDecoration: "none",
                   display: "flex",
                   alignItems: "center",
                   outline: "none",
-                }}
-                onMouseEnter={(e) => {
-                  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                  }
-                  e.currentTarget.style.boxShadow = tokens.shadows.hover;
-                }}
-                onMouseLeave={(e) => {
-                  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                    e.currentTarget.style.transform = "none";
-                  }
-                  e.currentTarget.style.boxShadow = tokens.shadows.soft;
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = `2px solid ${tokens.colors.accent}`;
-                  e.currentTarget.style.outlineOffset = "2px";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = "none";
                 }}
                 tabIndex={0}
               >
@@ -425,12 +373,9 @@ const Dashboard = () => {
         {/* Unified Chart */}
         <div style={{ marginBottom: tokens.spacing.xl }}>
           <div
+            className="app-card"
             style={{
-              backgroundColor: tokens.colors.bgSurface,
-              borderRadius: tokens.radii.card,
-              border: `1px solid ${tokens.colors.borderLight}`,
-              boxShadow: tokens.shadows.soft,
-              padding: tokens.spacing.lg,
+              padding: "1.5rem",
             }}
           >
             <UnifiedChart data={invoiceData} />
@@ -461,28 +406,12 @@ const Dashboard = () => {
                   return (
                     <div
                       key={invoice._id}
+                      className="app-card"
                       style={{
-                        backgroundColor: tokens.colors.bgSurface,
-                        borderRadius: tokens.radii.card,
-                        border: `1px solid ${tokens.colors.borderLight}`,
-                        boxShadow: "0 1px 3px rgba(16,24,40,0.02)",
                         padding: "16px 20px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        transition: "all 150ms ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                        }
-                        e.currentTarget.style.boxShadow = tokens.shadows.soft;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                          e.currentTarget.style.transform = "none";
-                        }
-                        e.currentTarget.style.boxShadow = "0 1px 3px rgba(16,24,40,0.02)";
                       }}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: tokens.spacing.md, flex: 1, minWidth: 0 }}>
@@ -495,16 +424,12 @@ const Dashboard = () => {
                               {invoice.invoiceNumber}
                             </h3>
                             <span
-                              style={{
+                              className={`badge ${invoice.status === 'paid' ? 'badge-paid' : invoice.status === 'overdue' ? 'badge-overdue' : invoice.status === 'sent' ? 'badge-active' : ''}`}
+                              style={invoice.status === 'partial' || invoice.status === 'draft' ? {
                                 backgroundColor: pillColors.bg,
                                 color: pillColors.text,
-                                padding: "2px 8px",
-                                borderRadius: tokens.radii.pill,
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.02em"
-                              }}
+                                border: 'none'
+                              } : {}}
                               aria-label={`Status: ${invoice.status}`}
                             >
                               {invoice.status}
@@ -575,13 +500,7 @@ const Dashboard = () => {
               <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
                 Snapshot Summary
               </h2>
-              <div style={{
-                backgroundColor: tokens.colors.bgSurface,
-                borderRadius: tokens.radii.card,
-                border: `1px solid ${tokens.colors.borderLight}`,
-                boxShadow: tokens.shadows.soft,
-                padding: tokens.spacing.lg,
-              }}>
+              <div className="app-card" style={{ padding: tokens.spacing.lg }}>
                 <SummaryPie data={invoiceData} />
               </div>
             </div>
@@ -598,11 +517,8 @@ const Dashboard = () => {
                 return (
                   <div
                     key={type}
+                    className="app-card"
                     style={{
-                      backgroundColor: tokens.colors.bgSurface,
-                      borderRadius: tokens.radii.card,
-                      border: `1px solid ${tokens.colors.borderLight}`,
-                      boxShadow: "0 1px 3px rgba(16,24,40,0.02)",
                       padding: "16px",
                       display: "flex",
                       alignItems: "center",

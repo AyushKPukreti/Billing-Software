@@ -272,12 +272,36 @@ export const updateInvoice = async (req, res) => {
     }
 
     // Update other fields
+    let autoAddedPayment = false;
+    let paymentAmountToAdd = 0;
+
     Object.keys(data).forEach(key => {
       // Skip items since we already handled them above
       if (key !== 'items' && key !== 'taxes' && data[key] !== undefined) {
+        // Intercept explicit UI updates to "paid" status
+        if (key === 'status' && data.status === 'paid' && invoice.status !== 'paid') {
+          const remainingAmount = Math.max(0, invoice.totalAmount - invoice.amountPaid);
+          if (remainingAmount > 0) {
+            autoAddedPayment = true;
+            paymentAmountToAdd = remainingAmount;
+          }
+        }
         invoice[key] = data[key];
       }
     });
+
+    if (autoAddedPayment) {
+      invoice.amountPaid += paymentAmountToAdd;
+      invoice.paymentHistory.push({
+        amountPaid: paymentAmountToAdd,
+        paymentMode: "other",
+        notes: "Auto-recorded from status change to Paid",
+        recordedBy: req.user.name || "System",
+        balanceDueAfter: invoice.totalAmount - invoice.amountPaid,
+        paymentDate: new Date()
+      });
+      invoice.paidDate = new Date();
+    }
 
     const updatedInvoice = await invoice.save();
     await updatedInvoice.populate("client");

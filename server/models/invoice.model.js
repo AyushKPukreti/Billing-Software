@@ -150,6 +150,10 @@ const invoiceSchema = new mongoose.Schema(
     paidDate: Date,
     notes: String,
 
+    lastSmsSentAt: { type: Date },
+    lastEmailSentAt: { type: Date },
+    lastWhatsAppSentAt: { type: Date },
+
     businessType: {
       type: String,
       enum: ["crane-hire", "barber-salon", "food-stall", "general"],

@@ -35,6 +35,7 @@ const Profile = () => {
     phone: "",
     email: "",
     taxId: "",
+    panNumber: "",
     udyamNo: "",
     hsnCode: "",
     address: {
@@ -58,6 +59,7 @@ const Profile = () => {
     newPassword: "",
     confirmNewPassword: "",
   });
+  const [errors, setErrors] = useState({});
   const [bankDetails, setBankDetails] = useState(null);
   const [bankLoading, setBankLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
@@ -76,6 +78,7 @@ const Profile = () => {
           phone: data.phone || "",
           email: data.email || "",
           taxId: data.taxId || "",
+          panNumber: data.panNumber || "",
           udyamNo: data.udyamNo || "",
           hsnCode: data.hsnCode || "",
           address: {
@@ -122,9 +125,18 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Auto-format Udyam Number to uppercase
-    if (name === "udyamNo") {
-      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    // Auto-format Udyam Number and PAN to uppercase
+    if (name === "udyamNo" || name === "panNumber") {
+      const upValue = value.toUpperCase();
+      setFormData((prev) => ({ ...prev, [name]: upValue }));
+      
+      if (name === "panNumber") {
+        if (upValue && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upValue)) {
+          setErrors(prev => ({ ...prev, panNumber: "Enter a valid PAN Card Number" }));
+        } else {
+          setErrors(prev => { const newE = { ...prev }; delete newE.panNumber; return newE; });
+        }
+      }
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -164,6 +176,11 @@ const Profile = () => {
 
   // Save changes
   const handleSave = async () => {
+    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      toast.error("Enter a valid PAN Card Number");
+      return;
+    }
+
     try {
       setLoading(true);
       const payload = { ...formData };
@@ -209,7 +226,7 @@ const Profile = () => {
         <button
           onClick={handleSave}
           disabled={loading}
-          className="flex items-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70"
+          className="btn-primary disabled:opacity-50"
           style={{ padding: "8px 16px" }}
         >
           <Save className="w-5 h-5" style={{ marginRight: "8px" }} />
@@ -219,13 +236,31 @@ const Profile = () => {
 
       {/* Branding & Signature */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <BrandingCard currentLogoUrl={logoUrl} onLogoChange={(url) => setLogoUrl(url)} />
-        <SignatureCard currentSignatureUrl={signatureUrl} onSignatureChange={(url) => setSignatureUrl(url)} />
+        <BrandingCard 
+          currentLogoUrl={logoUrl} 
+          onLogoChange={(url) => {
+            setLogoUrl(url);
+            if (currentUser) {
+              const newUrl = url ? `${url.split('?')[0]}?t=${Date.now()}` : '';
+              setCurrentUser({ ...currentUser, logoUrl: newUrl });
+            }
+          }} 
+        />
+        <SignatureCard 
+          currentSignatureUrl={signatureUrl} 
+          onSignatureChange={(url) => {
+            setSignatureUrl(url);
+            if (currentUser) {
+              const newUrl = url ? `${url.split('?')[0]}?t=${Date.now()}` : '';
+              setCurrentUser({ ...currentUser, signatureUrl: newUrl });
+            }
+          }} 
+        />
       </div>
 
       {/* Business Info */}
       <div
-        className="bg-white rounded-lg shadow-sm border border-gray-200"
+        className="app-card border-none"
         style={{ padding: "24px" }}
       >
         <h3
@@ -239,7 +274,7 @@ const Profile = () => {
           {/* Business Name */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <Building
@@ -253,7 +288,7 @@ const Profile = () => {
               name="businessName"
               value={formData.businessName}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="Enter your business name"
             />
@@ -262,7 +297,7 @@ const Profile = () => {
           {/* Name */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <User className="w-4 h-4 inline" style={{ marginRight: "8px" }} />
@@ -273,7 +308,7 @@ const Profile = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="Your full name"
             />
@@ -282,7 +317,7 @@ const Profile = () => {
           {/* Phone */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <Phone
@@ -296,7 +331,7 @@ const Profile = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="10-digit phone number"
             />
@@ -305,7 +340,7 @@ const Profile = () => {
           {/* Email */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <Mail className="w-4 h-4 inline" style={{ marginRight: "8px" }} />
@@ -324,7 +359,7 @@ const Profile = () => {
           {/* Address */}
           <div className="md:col-span-2">
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <MapPin
@@ -343,7 +378,7 @@ const Profile = () => {
                     name={field}
                     value={formData.address[field]}
                     onChange={handleAddressChange}
-                    className="border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="form-input"
                     style={{ padding: "10px" }}
                     placeholder={field
                       .replace("zipCode", "Zip Code")
@@ -360,7 +395,7 @@ const Profile = () => {
           {/* Tax ID */}
           <div className="md:col-span-2">
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <CreditCard
@@ -374,17 +409,42 @@ const Profile = () => {
               name="taxId"
               value={formData.taxId}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="Enter tax ID or GST number"
             />
+          </div>
+
+          {/* PAN Card Number */}
+          <div className="md:col-span-2">
+            <label
+              className="form-label"
+              style={{ marginBottom: "8px" }}
+            >
+              <CreditCard
+                className="w-4 h-4 inline"
+                style={{ marginRight: "8px" }}
+              />
+              PAN Card Number
+            </label>
+            <input
+              type="text"
+              name="panNumber"
+              value={formData.panNumber}
+              onChange={handleChange}
+              className={`form-input ${errors?.panNumber ? '!border-red-500' : ''}`}
+              style={{ padding: "10px" }}
+              placeholder="Enter PAN Card Number"
+              maxLength={10}
+            />
+            {errors?.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
           </div>
 
 
           {/* Udyam Number */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <FileDigit
@@ -398,7 +458,7 @@ const Profile = () => {
               name="udyamNo"
               value={formData.udyamNo}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="UDYAM-XX-XX-XXXXXXX"
             />
@@ -410,7 +470,7 @@ const Profile = () => {
           {/* HSN Code */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               <Hash
@@ -424,7 +484,7 @@ const Profile = () => {
               name="hsnCode"
               value={formData.hsnCode}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="Enter HSN Code (4-8 digits)"
             />
@@ -438,7 +498,7 @@ const Profile = () => {
 
       {/* Invoice Preferences Section */}
       <div
-        className="bg-white rounded-lg shadow-sm border border-gray-200"
+        className="app-card border-none"
         style={{ padding: "24px" }}
       >
         <h3
@@ -452,7 +512,7 @@ const Profile = () => {
           {/* Prefix */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               Invoice Number Prefix
@@ -462,7 +522,7 @@ const Profile = () => {
               name="prefix"
               value={formData.invoicePreferences.prefix}
               onChange={handleInvoicePreferencesChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="e.g. INV-"
             />
@@ -471,7 +531,7 @@ const Profile = () => {
           {/* Suffix */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700"
+              className="form-label"
               style={{ marginBottom: "8px" }}
             >
               Invoice Number Suffix
@@ -481,7 +541,7 @@ const Profile = () => {
               name="suffix"
               value={formData.invoicePreferences.suffix}
               onChange={handleInvoicePreferencesChange}
-              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input"
               style={{ padding: "10px" }}
               placeholder="e.g. -2025"
             />
@@ -553,7 +613,7 @@ const Profile = () => {
 
       {/* Password Section */}
       <div
-        className="bg-white rounded-lg shadow-sm border border-gray-200"
+        className="app-card border-none"
         style={{ padding: "24px" }}
       >
         <div
@@ -606,7 +666,7 @@ const Profile = () => {
 
          {/* Bank Details Section */}
       <div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200"
+        className="app-card border-none"
         style={{ padding: "24px" }}
       >
         <h3

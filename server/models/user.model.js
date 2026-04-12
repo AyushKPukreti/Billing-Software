@@ -72,6 +72,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    panNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
     udyamNo: {
       type: String,
       trim: true,
@@ -162,6 +167,7 @@ const userSchema = new mongoose.Schema(
     },
     logoUrl: { type: String, default: '' },
     signatureUrl: { type: String, default: '' },
+    allowedTemplates: { type: [String], default: undefined },
   },
   {
     timestamps: true,

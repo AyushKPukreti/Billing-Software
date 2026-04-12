@@ -13,6 +13,7 @@ import {
   Package,
 } from "lucide-react";
 import { UserContext } from "../context/userContext";
+import logoSrc from "../assets/logo.png";
 
 const Layout = () => {
   const location = useLocation();
@@ -28,6 +29,10 @@ const Layout = () => {
     { name: "Services", href: "/services", icon: Package },
     { name: "Invoices", href: "/invoices", icon: FileText },
   ];
+
+  if (currentUser?.role === 'admin') {
+    navigation.push({ name: "Users", href: "/admin/users", icon: Settings });
+  }
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -55,14 +60,14 @@ const Layout = () => {
 
   /* ── Styles ── */
   const sidebarStyle = {
-    background: '#FBFBFD',
-    borderRight: '1px solid var(--border, #E5E5E7)',
+    background: 'var(--surface)',
+    borderRight: '1px solid var(--border)',
   };
 
   const navItemBase = {
     padding: '10px 12px',
-    borderRadius: '10px',
-    transition: 'all 200ms ease',
+    borderRadius: 'var(--radius-sm)',
+    transition: 'all var(--transition-smooth)',
     fontSize: '14px',
     fontWeight: 500,
     letterSpacing: '-0.006em',
@@ -71,24 +76,25 @@ const Layout = () => {
     gap: '10px',
     textDecoration: 'none',
     position: 'relative',
+    overflow: 'hidden',
   };
 
   const navItemActive = {
     ...navItemBase,
-    background: 'var(--accent-light, #EFF6FF)',
-    color: 'var(--accent, #0071E3)',
+    background: 'var(--gradient-subtle)',
+    color: 'var(--color-primary)',
   };
 
   const navItemInactive = {
     ...navItemBase,
-    color: 'var(--text-secondary, #6E6E73)',
+    color: 'var(--text-secondary)',
   };
 
   const headerStyle = {
     background: 'rgba(255, 255, 255, 0.72)',
     backdropFilter: 'blur(20px) saturate(180%)',
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderBottom: '1px solid var(--border, #E5E5E7)',
+    borderBottom: '1px solid var(--border)',
     position: 'sticky',
     top: 0,
     zIndex: 30,
@@ -102,7 +108,7 @@ const Layout = () => {
     width: '36px',
     height: '36px',
     borderRadius: '50%',
-    background: 'var(--accent, #0071E3)',
+    background: 'var(--gradient-primary)',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
@@ -110,9 +116,8 @@ const Layout = () => {
     fontWeight: 600,
     fontSize: '14px',
     cursor: 'pointer',
-    transition: 'box-shadow 200ms ease, transform 200ms ease',
+    transition: 'box-shadow var(--transition-smooth), transform var(--transition-smooth)',
     border: '2px solid transparent',
-    letterSpacing: '0',
   };
 
   const dropdownStyle = {
@@ -120,10 +125,10 @@ const Layout = () => {
     right: 0,
     marginTop: '8px',
     width: '200px',
-    background: 'var(--surface, #FFFFFF)',
-    border: '1px solid var(--border, #E5E5E7)',
-    borderRadius: '12px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1), 0 2px 10px rgba(0, 0, 0, 0.04)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: 'var(--shadow-soft)',
     overflow: 'hidden',
     zIndex: 60,
     padding: '4px',
@@ -134,12 +139,12 @@ const Layout = () => {
     alignItems: 'center',
     gap: '10px',
     padding: '10px 12px',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-sm)',
     fontSize: '14px',
     fontWeight: 450,
-    color: 'var(--text-primary, #1D1D1F)',
+    color: 'var(--text-primary)',
     textDecoration: 'none',
-    transition: 'background 150ms ease',
+    transition: 'background var(--transition-smooth)',
     cursor: 'pointer',
     border: 'none',
     background: 'transparent',
@@ -147,28 +152,8 @@ const Layout = () => {
     textAlign: 'left',
   };
 
-  const newInvoiceBtnStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    width: '100%',
-    padding: '12px 16px',
-    borderRadius: '12px',
-    background: 'var(--accent, #0071E3)',
-    color: '#fff',
-    fontWeight: 600,
-    fontSize: '14px',
-    textDecoration: 'none',
-    transition: 'all 200ms ease',
-    border: 'none',
-    cursor: 'pointer',
-    boxShadow: '0 1px 3px rgba(0, 113, 227, 0.3)',
-    letterSpacing: '-0.006em',
-  };
-
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-page, #F7F7F8)' }}>
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-page)' }}>
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} className="lg:hidden">
@@ -178,7 +163,7 @@ const Layout = () => {
               inset: 0,
               background: 'rgba(0, 0, 0, 0.3)',
               backdropFilter: 'blur(4px)',
-              transition: 'opacity 200ms ease',
+              transition: 'opacity var(--transition-smooth)',
             }}
             onClick={() => setSidebarOpen(false)}
           />
@@ -201,30 +186,32 @@ const Layout = () => {
             justifyContent: 'space-between',
             height: '64px',
             padding: '0 20px',
-            borderBottom: '1px solid var(--border, #E5E5E7)',
+            borderBottom: '1px solid var(--border)',
           }}
         >
-          <h1
-            style={{
-              fontSize: '17px',
-              fontWeight: 700,
-              color: 'var(--text-primary, #1D1D1F)',
-              letterSpacing: '-0.022em',
-            }}
-          >
-            ARM Technologies
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src={logoSrc} alt="ARM Technologies" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
+            <h1
+              style={{
+                fontSize: '16px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.022em',
+              }}
+            >
+              ARM Technologies
+            </h1>
+          </div>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden"
             style={{
               padding: '6px',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-sm)',
               border: 'none',
               background: 'transparent',
-              color: 'var(--text-tertiary, #86868B)',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
-              transition: 'all 150ms ease',
             }}
           >
             <X className="h-5 w-5" />
@@ -233,7 +220,7 @@ const Layout = () => {
 
         {/* Navigation Links */}
         <nav style={{ padding: '12px 12px', marginTop: '4px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -245,14 +232,14 @@ const Layout = () => {
                   style={active ? navItemActive : navItemInactive}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.background = 'var(--border-light, #F0F0F2)';
-                      e.currentTarget.style.color = 'var(--text-primary, #1D1D1F)';
+                      e.currentTarget.style.background = 'var(--surface-secondary)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-secondary, #6E6E73)';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
                     }
                   }}
                 >
@@ -261,12 +248,10 @@ const Layout = () => {
                       style={{
                         position: 'absolute',
                         left: '0',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
+                        top: '0',
+                        bottom: '0',
                         width: '3px',
-                        height: '20px',
-                        borderRadius: '0 3px 3px 0',
-                        background: 'var(--accent, #0071E3)',
+                        background: 'var(--gradient-primary)',
                       }}
                     />
                   )}
@@ -275,9 +260,9 @@ const Layout = () => {
                       width: '18px',
                       height: '18px',
                       color: active
-                        ? 'var(--accent, #0071E3)'
-                        : 'var(--text-tertiary, #86868B)',
-                      transition: 'color 200ms ease',
+                        ? 'var(--color-primary)'
+                        : 'var(--text-secondary)',
+                      transition: 'color var(--transition-smooth)',
                       flexShrink: 0,
                     }}
                   />
@@ -296,24 +281,16 @@ const Layout = () => {
             left: 0,
             right: 0,
             padding: '16px',
-            borderTop: '1px solid var(--border, #E5E5E7)',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--surface)',
           }}
         >
           <Link
             to="/invoices/create"
-            style={newInvoiceBtnStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--accent-hover, #0077ED)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 113, 227, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--accent, #0071E3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 113, 227, 0.3)';
-            }}
+            className="btn-primary"
+            style={{ width: '100%', padding: '0.875rem' }}
           >
-            <Plus style={{ width: '16px', height: '16px' }} />
+            <Plus style={{ width: '18px', height: '18px' }} />
             New Invoice
           </Link>
         </div>
@@ -332,38 +309,39 @@ const Layout = () => {
                 borderRadius: '8px',
                 border: 'none',
                 background: 'transparent',
-                color: 'var(--text-secondary, #6E6E73)',
+                color: 'var(--text-secondary)',
                 cursor: 'pointer',
-                transition: 'all 150ms ease',
               }}
             >
               <Menu className="h-5 w-5" />
             </button>
 
             {/* Mobile Title */}
-            <h1
-              className="lg:hidden"
-              style={{
-                fontSize: '17px',
-                fontWeight: 600,
-                color: 'var(--text-primary, #1D1D1F)',
-                letterSpacing: '-0.022em',
-              }}
-            >
-              Billing Software
-            </h1>
+            <div className="lg:hidden flex items-center gap-2">
+              <img src={logoSrc} alt="ARM Technologies" style={{ height: '24px', width: '24px', objectFit: 'contain' }} />
+              <h1
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Billing Software
+              </h1>
+            </div>
 
             <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-between">
               <div style={{ flex: '1 1 0', minWidth: 0 }}>
+                {/* Clean area, title omitted for maximum minimalism, or we can keep it */}
                 <h1
                   style={{
                     fontSize: '17px',
                     fontWeight: 600,
-                    color: 'var(--text-primary, #1D1D1F)',
+                    color: 'var(--text-primary)',
                     letterSpacing: '-0.022em',
                   }}
                 >
-                  Multi-Domain Billing System
+                  Dashboard Overview
                 </h1>
               </div>
 
@@ -374,7 +352,7 @@ const Layout = () => {
                   style={avatarStyle}
                   title={businessName}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 113, 227, 0.2)';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-glow)';
                     e.currentTarget.style.transform = 'scale(1.05)';
                   }}
                   onMouseLeave={(e) => {
@@ -392,7 +370,7 @@ const Layout = () => {
                     <div
                       style={{
                         padding: '12px 12px 8px',
-                        borderBottom: '1px solid var(--border, #E5E5E7)',
+                        borderBottom: '1px solid var(--border)',
                         marginBottom: '4px',
                       }}
                     >
@@ -400,7 +378,7 @@ const Layout = () => {
                         style={{
                           fontSize: '13px',
                           fontWeight: 600,
-                          color: 'var(--text-primary, #1D1D1F)',
+                          color: 'var(--text-primary)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -413,7 +391,7 @@ const Layout = () => {
                       to="/profile"
                       style={dropdownItemStyle}
                       onClick={() => setProfileOpen(false)}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border-light, #F0F0F2)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-secondary)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       <User style={{ width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
@@ -423,7 +401,7 @@ const Layout = () => {
                       to="/logout"
                       style={dropdownItemStyle}
                       onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-primary, #1D1D1F)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                     >
                       <LogOut style={{ width: '16px', height: '16px' }} />
                       Logout
@@ -448,7 +426,7 @@ const Layout = () => {
                     to="/profile"
                     style={dropdownItemStyle}
                     onClick={() => setProfileOpen(false)}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border-light, #F0F0F2)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-secondary)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <User style={{ width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
@@ -458,7 +436,7 @@ const Layout = () => {
                     to="/logout"
                     style={dropdownItemStyle}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-primary, #1D1D1F)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                   >
                     <LogOut style={{ width: '16px', height: '16px' }} />
                     Logout
