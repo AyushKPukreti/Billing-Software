@@ -50,18 +50,17 @@ const calculateSparklineData = (invoices, metricType) => {
       else if (metricType === 'draftInvoices' && inv.status === 'draft') bucket.value += 1;
     }
   });
-  
+
   return result;
 };
 
-const Sparkline = ({ data, color, height = "60px", marginTop = "16px", strokeWidth = 2, hideTooltip = false, margin = { top: 5, bottom: 5, left: 0, right: 0} }) => {
-  if (!data || data.length === 0) return <div style={{height, marginTop}} />;
+const Sparkline = ({ data, color }) => {
+  if (!data || data.length === 0) return <div style={{height: "60px", marginTop: "16px"}} />;
   const max = Math.max(...data.map(d => d.value));
   const min = Math.min(...data.map(d => d.value));
   const allZero = max === 0 && min === 0;
 
   const CustomTooltip = ({ active, payload }) => {
-    if (hideTooltip) return null;
     if (active && payload && payload.length) {
       return (
         <div style={{ backgroundColor: 'rgba(255,255,255,0.95)', border: `1px solid ${tokens.colors.borderLight}`, padding: "4px 8px", borderRadius: "6px", fontSize: "12px", color: tokens.colors.textPrimary, boxShadow: tokens.shadows.soft }}>
@@ -73,17 +72,17 @@ const Sparkline = ({ data, color, height = "60px", marginTop = "16px", strokeWid
   };
 
   return (
-    <div style={{ height, width: "100%", marginTop }}>
+    <div style={{ height: "60px", width: "100%", marginTop: "16px" }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={margin}>
-          {!hideTooltip && <Tooltip content={<CustomTooltip />} cursor={{ stroke: tokens.colors.borderLight, strokeWidth: 1, strokeDasharray: "3 3" }} />}
+        <LineChart data={data} margin={{ top: 5, bottom: 5, left: 0, right: 0}}>
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: tokens.colors.borderLight, strokeWidth: 1, strokeDasharray: "3 3" }} />
           <Line 
             type="monotone" 
             dataKey="value" 
             stroke={allZero ? tokens.colors.borderLight : color} 
-            strokeWidth={strokeWidth} 
+            strokeWidth={2} 
             dot={false}
-            activeDot={hideTooltip ? false : { r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }}
             isAnimationActive={false}
           />
         </LineChart>
@@ -247,7 +246,7 @@ const Dashboard = () => {
       title: "Sent Invoices",
       value: stats.sentInvoices,
       icon: FileText,
-      accentText: "#6366F1", // Indigo
+      accentText: "#6366F1",
       accentBg: "#EEF2FF",
       link: "/invoices",
       sparklineData: stats.sparklines.sentInvoices,
@@ -265,7 +264,7 @@ const Dashboard = () => {
       title: "Partial",
       value: stats.partialPayments,
       icon: CreditCard,
-      accentText: "#EA580C", // Orange
+      accentText: "#EA580C",
       accentBg: "#FFF7ED",
       link: "/invoices",
       sparklineData: stats.sparklines.partialPayments,
@@ -295,7 +294,7 @@ const Dashboard = () => {
   return (
     <div style={{ backgroundColor: tokens.colors.bgCanvas, minHeight: "100vh", padding: `${tokens.spacing.xl} 0`, fontFamily: "'Inter', 'SF Pro Text', sans-serif" }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: tokens.spacing.lg }}>
           <div>
@@ -317,8 +316,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Summary Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6" style={{ marginBottom: tokens.spacing.xl }}>
+        {/* Summary Cards Grid - Responsive: 1 column on mobile, 2 on tablet, 4 on desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" style={{ marginBottom: tokens.spacing.xl }}>
           {statCards.map((card, index) => {
             const Icon = card.icon;
             return (
@@ -327,76 +326,28 @@ const Dashboard = () => {
                 to={card.link}
                 className="app-card"
                 style={{
+                  padding: tokens.spacing.lg,
                   textDecoration: "none",
                   display: "flex",
-                  flexDirection: "column",
+                  alignItems: "center",
                   outline: "none",
-                  overflow: "hidden", // ensures rounded corners contain the inner padded sections
-                  width: "100%",
                 }}
                 tabIndex={0}
               >
-                {/* Mobile View */}
-                <div className="flex sm:hidden flex-col w-full h-full" style={{ padding: "16px" }}>
-                  <div className="flex justify-between items-center" style={{ marginBottom: "12px" }}>
-                    <p style={{ fontSize: "13px", fontWeight: "600", color: tokens.colors.textSecondary, margin: "0" }} className="truncate">
-                      {card.title}
-                    </p>
-                    <div
-                      style={{
-                        backgroundColor: card.accentBg,
-                        color: card.accentText,
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "8px", 
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon style={{ width: "16px", height: "16px" }} />
-                    </div>
-                  </div>
-                  
-                  <div style={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-                    <p style={{ 
-                      fontSize: "22px", 
-                      fontWeight: "700", 
-                      color: tokens.colors.textPrimary, 
-                      lineHeight: "1.1",
-                      margin: 0,
-                      letterSpacing: "-0.5px"
-                    }} className="break-words">
-                      {card.value}
-                    </p>
-                  </div>
-
-                  {card.sparklineData ? (
-                     <div style={{ width: "100%", marginTop: "12px" }}>
-                       <Sparkline 
-                         data={card.sparklineData} 
-                         color={card.accentText} 
-                         height="32px" 
-                         marginTop="0px" 
-                         strokeWidth={2}
-                         hideTooltip={true}
-                         margin={{ top: 2, bottom: 2, left: 0, right: 0 }}
-                       />
-                     </div>
-                  ) : (
-                     <div style={{ height: "32px", marginTop: "12px", width: "100%" }} />
-                  )}
-                </div>
-
-                {/* Desktop View (UNCHANGED logic) */}
-                <div className="hidden sm:flex flex-col w-full h-full" style={{ padding: tokens.spacing.lg }}>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: "13px", fontWeight: "500", color: tokens.colors.textSecondary, marginBottom: "4px" }} className="truncate">
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: "13px", fontWeight: "500", color: tokens.colors.textSecondary, marginBottom: "4px" }}>
                         {card.title}
                       </p>
-                      <p style={{ fontWeight: "600", color: tokens.colors.textPrimary, lineHeight: "1.2" }} className="text-[20px] sm:text-[24px] break-words whitespace-normal sm:whitespace-nowrap sm:truncate">
+                      <p style={{ 
+                        fontWeight: "600", 
+                        color: tokens.colors.textPrimary, 
+                        lineHeight: "1.2",
+                        fontSize: "18px",
+                        wordBreak: "break-word",
+                        whiteSpace: "normal"
+                      }}>
                         {card.value}
                       </p>
                     </div>
@@ -468,6 +419,8 @@ const Dashboard = () => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "12px",
                       }}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: tokens.spacing.md, flex: 1, minWidth: 0 }}>
@@ -475,8 +428,8 @@ const Dashboard = () => {
                           <StatusIcon className="h-5 w-5" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 style={{ fontSize: "15px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }} className="truncate">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 style={{ fontSize: "15px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }}>
                               {invoice.invoiceNumber}
                             </h3>
                             <span
@@ -491,7 +444,7 @@ const Dashboard = () => {
                               {invoice.status}
                             </span>
                           </div>
-                          <p style={{ fontSize: "13px", color: tokens.colors.textSecondary, margin: 0 }} className="truncate">
+                          <p style={{ fontSize: "13px", color: tokens.colors.textSecondary, margin: 0 }}>
                             {invoice.client?.companyName || "Unknown Client"} 
                             {(invoice.status === 'partial' || invoice.status === 'sent' || invoice.status === 'overdue') && invoice.amountDue && (
                               <span style={{ marginLeft: "8px", color: invoice.status === 'overdue' ? tokens.colors.danger : tokens.colors.textSecondary }}>
@@ -515,7 +468,7 @@ const Dashboard = () => {
                   <p style={{ color: tokens.colors.textSecondary, fontSize: "14px" }}>No recent activity</p>
                 </div>
               )}
-              
+
               <Link
                 to="/invoices"
                 style={{
@@ -561,43 +514,44 @@ const Dashboard = () => {
               </div>
             </div>
 
-          {/* Business Types Panel */}
-          <div>
-            <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
-              Business Modules
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacing.sm }}>
-              {(Array.isArray(currentUser?.businessType) ? currentUser.businessType : []).map((type) => {
-                const meta = BUSINESS_META[type] || { name: titleize(type), icon: Settings };
-                const Icon = meta.icon;
-                return (
-                  <div
-                    key={type}
-                    className="app-card"
-                    style={{
-                      padding: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: tokens.spacing.md,
-                    }}
-                  >
-                    <div style={{ backgroundColor: "#F3F4F6", color: "#6B7280", borderRadius: "10px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon className="h-5 w-5" />
+            {/* Business Types Panel */}
+            <div>
+              <h2 style={{ fontSize: "20px", fontWeight: "600", color: tokens.colors.textPrimary, marginBottom: tokens.spacing.md }}>
+                Business Modules
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacing.sm }}>
+                {(Array.isArray(currentUser?.businessType) ? currentUser.businessType : []).map((type) => {
+                  const meta = BUSINESS_META[type] || { name: titleize(type), icon: Settings };
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={type}
+                      className="app-card"
+                      style={{
+                        padding: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: tokens.spacing.md,
+                      }}
+                    >
+                      <div style={{ backgroundColor: "#F3F4F6", color: "#6B7280", borderRadius: "10px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 style={{ fontSize: "14px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }}>
+                          {meta.name}
+                        </h3>
+                        <p style={{ fontSize: "12px", color: tokens.colors.textSecondary, margin: "2px 0 0 0" }}>
+                          Active module
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 style={{ fontSize: "14px", fontWeight: "600", color: tokens.colors.textPrimary, margin: 0 }}>
-                        {meta.name}
-                      </h3>
-                      <p style={{ fontSize: "12px", color: tokens.colors.textSecondary, margin: "2px 0 0 0" }}>
-                        Active module
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-          </div>
+
         </div>
       </div>
     </div>

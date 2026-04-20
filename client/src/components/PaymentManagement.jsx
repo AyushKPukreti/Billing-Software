@@ -230,7 +230,7 @@ const PaymentManagement = () => {
     <div style={{ padding: "20px" }}>
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
-        <div className="flex items-center mb-4">
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
           <button
             onClick={() => navigate(-1)}
             style={{ 
@@ -239,22 +239,27 @@ const PaymentManagement = () => {
               marginRight: "12px",
               borderRadius: "8px"
             }}
-            className="cursor-pointer hover:bg-gray-100 flex-shrink-0"
+            className="cursor-pointer hover:bg-gray-100"
           >
             <ArrowLeft style={{ width: "20px", height: "20px" }} />
           </button>
-          <div className="min-w-0">
-            <h1 className="text-[20px] sm:text-2xl font-bold text-gray-900 truncate">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
               Payment Management
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 truncate">
+            <p className="text-gray-600">
               Invoice #{invoice.invoiceNumber} - {invoice.client?.companyName}
             </p>
           </div>
         </div>
 
         {/* Invoice Summary */}
-        <div style={{ marginBottom: "24px" }} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "1fr", 
+          gap: "16px",
+          marginBottom: "24px"
+        }} className="md:grid-cols-4">
           <div style={{ 
             backgroundColor: "white", 
             padding: "16px", 
@@ -349,7 +354,7 @@ const PaymentManagement = () => {
           </div>
 
           <form onSubmit={editingPayment ? handleUpdatePayment : handleAddPayment}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }} className="md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700" style={{ marginBottom: "8px" }}>
                   Amount *
@@ -461,14 +466,13 @@ const PaymentManagement = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
               <button
                 type="submit"
                 disabled={!paymentData.amount || !isAmountValid}
                 style={{ 
                   display: "flex", 
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: "center", 
                   padding: "8px 16px", 
                   backgroundColor: "#2563eb", 
                   color: "white", 
@@ -504,7 +508,7 @@ const PaymentManagement = () => {
         borderRadius: "8px",
         border: "1px solid #e5e7eb"
       }}>
-        <div style={{ padding: "24px", borderBottom: "1px solid #e5e7eb" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
           <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
         </div>
 
@@ -516,14 +520,14 @@ const PaymentManagement = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {paymentHistory.map((payment) => (
-              <div key={payment._id} className="p-4 border-b border-gray-100 last:border-0">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 w-full">
-                  <div className="flex flex-col items-start gap-1 w-full sm:w-auto">
+              <div key={payment._id} className="border-b border-gray-100 last:border-0" style={{ padding: "16px" }}>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full" style={{ gap: "12px" }}>
+                  <div className="flex flex-col items-start w-full sm:w-auto" style={{ gap: "4px" }}>
                     <p className="font-semibold text-gray-900 text-lg sm:text-base">
                       Rs. {payment.amountPaid?.toFixed(2)}
                     </p>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center text-sm text-gray-600" style={{ gap: "4px 8px" }}>
+                      <div className="flex items-center" style={{ gap: "6px" }}>
                         <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                         <span>{format(new Date(payment.paymentDate), "MMM dd, yyyy")}</span>
                       </div>
@@ -537,13 +541,13 @@ const PaymentManagement = () => {
                       )}
                     </div>
                     {payment.notes && (
-                      <p className="text-sm text-gray-500 mt-1 break-words">
+                      <p className="text-sm text-gray-500 break-words" style={{ marginTop: "4px" }}>
                         {payment.notes}
                       </p>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-gray-100 sm:border-0 w-full sm:w-auto">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto" style={{ gap: "12px" }}>
                     <p className="text-sm font-medium text-gray-800 sm:text-gray-600">
                       Balance Due: Rs. {payment.balanceDueAfter?.toFixed(2)}
                     </p>
