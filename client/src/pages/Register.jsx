@@ -10,7 +10,7 @@ import {
   ArrowRight
 } from "lucide-react";
 
-import logoSrc from "../assets/logo.png";
+import logoSrc from "../assets/logo.jpeg";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 

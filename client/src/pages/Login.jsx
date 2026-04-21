@@ -13,7 +13,7 @@ import {
   ArrowRight
 } from "lucide-react";
 
-import logoSrc from "../assets/logo.png";
+import logoSrc from "../assets/logo.jpeg";
 
 const Login = () => {
   const navigate = useNavigate();

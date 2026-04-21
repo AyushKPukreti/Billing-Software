@@ -13,7 +13,7 @@ import {
   Package,
 } from "lucide-react";
 import { UserContext } from "../context/userContext";
-import logoSrc from "../assets/logo.png";
+import logoSrc from "../assets/logo.jpeg";
 
 const Layout = () => {
   const location = useLocation();
@@ -288,6 +288,7 @@ const Layout = () => {
           <Link
             to="/invoices/create"
             className="btn-primary"
+            onClick={() => setSidebarOpen(false)}
             style={{ width: '100%', padding: '0.875rem' }}
           >
             <Plus style={{ width: '18px', height: '18px' }} />

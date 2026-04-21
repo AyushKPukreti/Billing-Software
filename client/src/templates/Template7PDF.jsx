@@ -270,10 +270,27 @@ const Template7PDF = ({ invoiceData, numberToWords, currentUser, signatureBase64
                 <View style={s.recipientValue}><Text style={s.bold}>{invoiceData.client?.gstNumber || "-"}</Text></View>
               </View>
 
-              {/* Service Period */}
-              <View style={[s.recipientRow, { backgroundColor: "#F9F9F9" }]}>
-                <View style={[s.recipientLabel, { width: "50%" }]}><Text style={[s.bold, { textAlign: "center" }]}>Service Rendered Period :</Text></View>
-                <View style={[s.recipientValue, { width: "50%", alignItems: "center" }]}><Text>{invoiceData.servicePeriod || getServicePeriod(invoiceData.invoiceDate)}</Text></View>
+          {/* Financials & Footer */}
+          <View style={s.footerRow}>
+            {/* Left Column: Bank & Amount in Words */}
+            <View style={s.footerLeft}>
+              <Text style={s.bold}>AMOUNT IN WORDS:</Text>
+              <Text style={{ marginBottom: 10 }}>{numberToWords(invoiceData.totalAmount || 0)}</Text>
+              
+              {invoiceData?.bankDetails && (
+                <>
+                  <Text style={s.bankTitle}>BANK DETAILS FOR PAYMENT</Text>
+                  <Text>BANK NAME: {invoiceData.bankDetails.bankName || "-"}</Text>
+                  <Text>AC NAME: {invoiceData.bankDetails.accountHolderName || "-"}</Text>
+                  <Text>AC NO: {invoiceData.bankDetails.accountNumber || "-"}</Text>
+                  <Text>IFSC CODE: {invoiceData.bankDetails.ifscCode || "-"}</Text>
+                  <Text>BRANCH: {invoiceData.bankDetails.branchName || "-"}</Text>
+                </>
+              )}
+              
+              <View style={{ marginTop: 20 }}>
+                <Text style={s.bold}>CUSTOMER RECEIVING</Text>
+                <View style={{ borderBottomWidth: 1, width: 150, marginTop: 20 }} />
               </View>
 
               {/* Description Of Service Note */}

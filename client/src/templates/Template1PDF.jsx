@@ -512,7 +512,7 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
             {numberToWords
               ? numberToWords(invoiceData.totalAmount)
               : invoiceData.totalAmount.toFixed(2)}{" "}
-            Only
+            
           </Text>
         </View>
 
@@ -614,7 +614,7 @@ const Template1PDF = ({ invoiceData, numberToWords, currentUser, copyType, signa
                 {numberToWords
                   ? numberToWords(invoiceData.totalTax)
                   : invoiceData.totalTax.toFixed(2)}{" "}
-                Only
+                
               </Text>
             </Text>
           </View>
