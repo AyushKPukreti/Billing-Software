@@ -143,34 +143,50 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
   const totalQty = invoiceData.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
   const aggregateSubtotal = invoiceData.subtotal;
 
+  // Dynamic Tax Components
+  const appliedTaxes = Array.isArray(invoiceData.taxes) && invoiceData.taxes.length > 0
+    ? invoiceData.taxes
+    : [{ name: "CGST" }, { name: "SGST" }]; // Fallback
+  const numTaxes = appliedTaxes.length || 1;
+
   // Aggregate Tax Summary by HSN / Tax Rate
   const taxSummary = invoiceData.items.reduce((acc, item) => {
     const hsn = item.hsnCode || "None";
     const taxable = item.subtotal;
     const taxRate = item.taxRate || 0;
-    const cgstRate = taxRate / 2;
-    const sgstRate = taxRate / 2;
     const taxAmt = (taxable * taxRate) / 100;
-    const cgstAmt = taxAmt / 2;
-    const sgstAmt = taxAmt / 2;
 
     const key = `${hsn}-${taxRate}`;
     if (!acc[key]) {
-      acc[key] = { hsn, taxable: 0, cgstRate, cgstAmt: 0, sgstRate, sgstAmt: 0, totalTax: 0 };
+      acc[key] = { hsn, taxable: 0, taxRate, totalTax: 0, taxes: appliedTaxes.map(t => ({ name: t.name, rate: taxRate / numTaxes, amount: 0 })) };
     }
     acc[key].taxable += taxable;
-    acc[key].cgstAmt += cgstAmt;
-    acc[key].sgstAmt += sgstAmt;
     acc[key].totalTax += taxAmt;
+    acc[key].taxes.forEach(t => {
+      t.amount += taxAmt / numTaxes;
+    });
+
     return acc;
   }, {});
 
   const taxSummaryRows = Object.values(taxSummary);
   
   const totalTaxable = taxSummaryRows.reduce((sum, row) => sum + row.taxable, 0);
-  const totalCgst = taxSummaryRows.reduce((sum, row) => sum + row.cgstAmt, 0);
-  const totalSgst = taxSummaryRows.reduce((sum, row) => sum + row.sgstAmt, 0);
   const totalSummaryTax = taxSummaryRows.reduce((sum, row) => sum + row.totalTax, 0);
+
+  // Calculate totals per tax type
+  const taxTotals = appliedTaxes.map(tax => {
+    return {
+      name: tax.name,
+      total: taxSummaryRows.reduce((sum, row) => {
+        const matchingTax = row.taxes.find(t => t.name === tax.name);
+        return sum + (matchingTax ? matchingTax.amount : 0);
+      }, 0)
+    };
+  });
+  
+  const dynRateW = `${20 / numTaxes}%`;
+  const dynAmtW = `${30 / numTaxes}%`;
 
   // Safely extract and format shipping address
   const rawShipping = invoiceData.shippingAddress || invoiceData.shipping_address || invoiceData.client?.shippingAddress;
@@ -323,38 +339,44 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
         </View>
 
         {/* 6. Tax Summary Section */}
-        {taxSummaryRows.length > 0 && (
+        {taxSummaryRows.length > 0 && invoiceData.totalTax > 0 && (
           <View style={{ marginBottom: 10 }}>
             <Text style={s.taxTitle}>Tax Summary</Text>
             <View style={[s.table, { marginBottom: 0 }]}>
               <View style={s.tableHeader}>
-                <Text style={[s.colHeader, s.tHsn]}>HSN/SAC</Text>
-                <Text style={[s.colHeader, s.tTaxable, s.textRight]}>Taxable Amount</Text>
-                <Text style={[s.colHeader, s.tCgstRate, s.textRight]}>CGST Rate</Text>
-                <Text style={[s.colHeader, s.tCgstAmt, s.textRight]}>CGST Amount</Text>
-                <Text style={[s.colHeader, s.tSgstRate, s.textRight]}>SGST Rate</Text>
-                <Text style={[s.colHeader, s.tSgstAmt, s.textRight]}>SGST Amount</Text>
-                <Text style={[s.colHeaderLast, s.tTotalTax, s.textRight]}>Total Tax</Text>
+                <Text style={[s.colHeader, { width: "16%" }]}>HSN/SAC</Text>
+                <Text style={[s.colHeader, { width: "14%" }, s.textRight]}>Taxable Amount</Text>
+                {appliedTaxes.map((tax, idx) => (
+                  <React.Fragment key={`th-${idx}`}>
+                    <Text style={[s.colHeader, { width: dynRateW }, s.textRight]}>{tax.name} Rate</Text>
+                    <Text style={[s.colHeader, { width: dynAmtW }, s.textRight]}>{tax.name} Amount</Text>
+                  </React.Fragment>
+                ))}
+                <Text style={[s.colHeaderLast, { width: "20%" }, s.textRight]}>Total Tax</Text>
               </View>
               {taxSummaryRows.map((row, idx) => (
                 <View key={idx} style={s.tableRow}>
-                  <Text style={[s.colCell, s.tHsn, s.textCenter]}>{row.hsn}</Text>
-                  <Text style={[s.colCell, s.tTaxable, s.textRight]}>Rs. {row.taxable.toFixed(2)}</Text>
-                  <Text style={[s.colCell, s.tCgstRate, s.textRight]}>{row.cgstRate}%</Text>
-                  <Text style={[s.colCell, s.tCgstAmt, s.textRight]}>Rs. {row.cgstAmt.toFixed(2)}</Text>
-                  <Text style={[s.colCell, s.tSgstRate, s.textRight]}>{row.sgstRate}%</Text>
-                  <Text style={[s.colCell, s.tSgstAmt, s.textRight]}>Rs. {row.sgstAmt.toFixed(2)}</Text>
-                  <Text style={[s.colCellLast, s.tTotalTax, s.textRight]}>Rs. {row.totalTax.toFixed(2)}</Text>
+                  <Text style={[s.colCell, { width: "16%" }, s.textCenter]}>{row.hsn}</Text>
+                  <Text style={[s.colCell, { width: "14%" }, s.textRight]}>Rs. {row.taxable.toFixed(2)}</Text>
+                  {row.taxes.map((tax, tidx) => (
+                    <React.Fragment key={`td-${idx}-${tidx}`}>
+                      <Text style={[s.colCell, { width: dynRateW }, s.textRight]}>{tax.rate}%</Text>
+                      <Text style={[s.colCell, { width: dynAmtW }, s.textRight]}>Rs. {tax.amount.toFixed(2)}</Text>
+                    </React.Fragment>
+                  ))}
+                  <Text style={[s.colCellLast, { width: "20%" }, s.textRight]}>Rs. {row.totalTax.toFixed(2)}</Text>
                 </View>
               ))}
               <View style={s.tableTotalRow}>
-                <Text style={[s.colCell, s.tHsn, s.bold, s.textRight]}>TOTAL</Text>
-                <Text style={[s.colCell, s.tTaxable, s.bold, s.textRight]}>Rs. {totalTaxable.toFixed(2)}</Text>
-                <Text style={[s.colCell, s.tCgstRate]}></Text>
-                <Text style={[s.colCell, s.tCgstAmt, s.bold, s.textRight]}>Rs. {totalCgst.toFixed(2)}</Text>
-                <Text style={[s.colCell, s.tSgstRate]}></Text>
-                <Text style={[s.colCell, s.tSgstAmt, s.bold, s.textRight]}>Rs. {totalSgst.toFixed(2)}</Text>
-                <Text style={[s.colCellLast, s.tTotalTax, s.bold, s.textRight]}>Rs. {totalSummaryTax.toFixed(2)}</Text>
+                <Text style={[s.colCell, { width: "16%" }, s.bold, s.textRight]}>TOTAL</Text>
+                <Text style={[s.colCell, { width: "14%" }, s.bold, s.textRight]}>Rs. {totalTaxable.toFixed(2)}</Text>
+                {taxTotals.map((taxTot, idx) => (
+                  <React.Fragment key={`tf-${idx}`}>
+                    <Text style={[s.colCell, { width: dynRateW }]}></Text>
+                    <Text style={[s.colCell, { width: dynAmtW }, s.bold, s.textRight]}>Rs. {taxTot.total.toFixed(2)}</Text>
+                  </React.Fragment>
+                ))}
+                <Text style={[s.colCellLast, { width: "20%" }, s.bold, s.textRight]}>Rs. {totalSummaryTax.toFixed(2)}</Text>
               </View>
             </View>
           </View>
