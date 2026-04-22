@@ -949,7 +949,7 @@ const Invoices = () => {
             }}
           >
             <option value="all">All Years</option>
-            {[2025, 2024, 2023, 2022].map((year) => (
+            {Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>

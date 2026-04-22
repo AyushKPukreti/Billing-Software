@@ -1437,9 +1437,23 @@ const EditInvoice = () => {
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border, #E5E5E7)", paddingTop: "16px", marginTop: "4px" }}>
-                <span style={{ fontSize: "clamp(16px, 4vw, 18px)", fontWeight: 600 }}>Total Amount</span>
-                <span style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border, #E5E5E7)", paddingTop: "16px", marginTop: "4px", gap: "12px" }}>
+                <span style={{ fontSize: "clamp(16px, 4vw, 18px)", fontWeight: 600, flexShrink: 0 }}>Total Amount</span>
+                <span style={{
+                  fontSize: (() => {
+                    const len = (totals?.totalAmount ?? 0).toFixed(2).length;
+                    if (len > 18) return "13px";
+                    if (len > 14) return "16px";
+                    if (len > 10) return "20px";
+                    return "clamp(22px, 5vw, 28px)";
+                  })(),
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  letterSpacing: "-0.02em",
+                  textAlign: "right",
+                  wordBreak: "break-all",
+                  minWidth: 0,
+                }}>
                   Rs. {(totals?.totalAmount ?? 0).toFixed(2)}
                 </span>
               </div>
