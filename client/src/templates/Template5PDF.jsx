@@ -300,7 +300,7 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
             <Text style={[s.colHeader, s.wHsn]}>HSN/SAC</Text>
             <Text style={[s.colHeader, s.wQty, s.textRight]}>Quantity</Text>
             <Text style={[s.colHeader, s.wPrice, s.textRight]}>Price / Unit (Rs.)</Text>
-            <Text style={[s.colHeader, s.wGst, s.textRight]}>GST (Rs.)</Text>
+            {/* <Text style={[s.colHeader, s.wGst, s.textRight]}>GST (Rs.)</Text> */}
             <Text style={[s.colHeaderLast, s.wAmt, s.textRight]}>Amount (Rs.)</Text>
           </View>
           
@@ -317,10 +317,10 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
                 <Text style={[s.colCell, s.wHsn, s.textCenter]}>{item.hsnCode || "-"}</Text>
                 <Text style={[s.colCell, s.wQty, s.textRight]}>{item.quantity}</Text>
                 <Text style={[s.colCell, s.wPrice, s.textRight]}>{item.baseRate.toFixed(2)}</Text>
-                <Text style={[s.colCell, s.wGst, s.textRight]}>
+                {/* <Text style={[s.colCell, s.wGst, s.textRight]}>
                   {taxAmt.toFixed(2)}{"\n"}
                   <Text style={{ fontSize: 6, color: "#666" }}>({item.taxRate || 0}%)</Text>
-                </Text>
+                </Text> */}
                 <Text style={[s.colCellLast, s.wAmt, s.textRight]}>{item.subtotal.toFixed(2)}</Text>
               </View>
             );
@@ -333,7 +333,7 @@ const Template5PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
             <Text style={[s.colCell, s.wHsn]}></Text>
             <Text style={[s.colCell, s.wQty, s.bold, s.textRight]}>{totalQty}</Text>
             <Text style={[s.colCell, s.wPrice]}></Text>
-            <Text style={[s.colCell, s.wGst]}></Text>
+            {/* <Text style={[s.colCell, s.wGst]}></Text> */}
             <Text style={[s.colCellLast, s.wAmt, s.bold, s.textRight]}>{aggregateSubtotal.toFixed(2)}</Text>
           </View>
         </View>

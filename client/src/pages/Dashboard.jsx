@@ -133,8 +133,11 @@ const Dashboard = () => {
         axios.get(`${BASE_URL}/invoices`, { withCredentials: true }),
       ]);
 
-      const clients = clientsRes.data || [];
-      const invoices = invoicesRes.data || [];
+      const clientsData = clientsRes.data || {};
+      const clients = Array.isArray(clientsData) ? clientsData : (Array.isArray(clientsData.clients) ? clientsData.clients : []);
+      
+      const invoicesData = invoicesRes.data || [];
+      const invoices = Array.isArray(invoicesData) ? invoicesData : (Array.isArray(invoicesData.invoices) ? invoicesData.invoices : (Array.isArray(invoicesData.data) ? invoicesData.data : []));
       setInvoiceData(invoices);
 
       // Calculate comprehensive stats
