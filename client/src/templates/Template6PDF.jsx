@@ -311,7 +311,11 @@ const Template6PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
           {/* Bottom Section */}
           <View style={s.bottomContainer}>
             <View style={s.bottomLeft}>
-              <Text style={{ fontSize: 8, marginBottom: 10 }}>GST {grandTotal.toFixed(2)} * 0% = 0 SGST,</Text>
+              <Text style={{ fontSize: 8, marginBottom: 10 }}>
+                {Array.isArray(invoiceData?.taxes) && invoiceData.taxes.length > 0
+                  ? invoiceData.taxes.map(t => `${t.name}: Rs ${Number(t.amount).toFixed(2)}`).join(" | ")
+                  : totalTax > 0 ? `Tax Amount: Rs ${totalTax.toFixed(2)}` : ""}
+              </Text>
               
               <Text style={s.termsTitle}>Terms & Conditions:</Text>
               <Text style={s.termsText}>1) Goods once sold will not be taken back or exchanged.</Text>
@@ -338,18 +342,36 @@ const Template6PDF = ({ invoiceData, currentUser, numberToWords, signatureBase64
                 <Text style={s.totalLabel}>Sub Total</Text>
                 <Text style={s.totalVal}>{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text>
               </View>
-              <View style={s.totalsRow}>
-                <Text style={s.totalLabel}>Bill Dis</Text>
-                <Text style={s.totalVal}>{discount.toFixed(2)}</Text>
-              </View>
-              <View style={s.totalsRow}>
-                <Text style={s.totalLabel}>SGST</Text>
-                <Text style={s.totalVal}>{(totalTax / 2).toFixed(2)}</Text>
-              </View>
-              <View style={[s.totalsRow, { borderBottomWidth: 0 }]}>
-                <Text style={s.totalLabel}>CGST</Text>
-                <Text style={s.totalVal}>{(totalTax / 2).toFixed(2)}</Text>
-              </View>
+              {discount > 0 && (
+                <View style={s.totalsRow}>
+                  <Text style={s.totalLabel}>Bill Dis</Text>
+                  <Text style={s.totalVal}>{discount.toFixed(2)}</Text>
+                </View>
+              )}
+              {Array.isArray(invoiceData?.taxes) && invoiceData.taxes.length > 0 ? (
+                invoiceData.taxes.map((tax, idx) => (
+                  <View key={idx} style={[s.totalsRow, idx === invoiceData.taxes.length - 1 ? { borderBottomWidth: 0 } : {}]}>
+                    <Text style={s.totalLabel}>{tax.name}</Text>
+                    <Text style={s.totalVal}>{Number(tax.amount).toFixed(2)}</Text>
+                  </View>
+                ))
+              ) : totalTax > 0 ? (
+                <>
+                  <View style={s.totalsRow}>
+                    <Text style={s.totalLabel}>SGST</Text>
+                    <Text style={s.totalVal}>{(totalTax / 2).toFixed(2)}</Text>
+                  </View>
+                  <View style={[s.totalsRow, { borderBottomWidth: 0 }]}>
+                    <Text style={s.totalLabel}>CGST</Text>
+                    <Text style={s.totalVal}>{(totalTax / 2).toFixed(2)}</Text>
+                  </View>
+                </>
+              ) : (
+                <View style={[s.totalsRow, { borderBottomWidth: 0 }]}>
+                  <Text style={s.totalLabel}>Tax</Text>
+                  <Text style={s.totalVal}>0.00</Text>
+                </View>
+              )}
             </View>
           </View>
 
