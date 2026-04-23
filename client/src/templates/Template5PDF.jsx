@@ -6,7 +6,7 @@ import {
   View,
   Image,
   StyleSheet,
-} from "@react-pdf/renderer";
+} from "@react-pdf/renderer"; 
 
 // ── Styles ──────────────────────────────────────────────────────
 const s = StyleSheet.create({
