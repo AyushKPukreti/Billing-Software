@@ -317,12 +317,12 @@ const Template7PDF = ({ invoiceData, numberToWords, currentUser, signatureBase64
             <View style={[s.td, { width: colDims.qty, justifyContent: "center" }]}><Text style={{ textAlign: "center" }}>{item.quantity != null ? Number(item.quantity).toFixed(3) : "0.000"}</Text></View>
             <View style={[s.td, { width: colDims.unit, justifyContent: "center" }]}><Text style={{ textAlign: "center" }}>{item.unitType || "UOM"}</Text></View>
             <View style={[s.td, { width: colDims.rate, justifyContent: "center" }]}>
-              <Text style={{ textAlign: "right" }}>
+              <Text style={{ textAlign: "right", fontSize: item.pricingType === "tiered" ? 7.5 : 8.5 }}>
                 {item.pricingType === "tiered"
                   ? item.pricingTiers
                       ?.map(
                         (t) =>
-                          `${t.minValue}–${t.maxValue !== null ? t.maxValue : "Above"} ${item.unitType || ""}: Rs. ${Number(t.rate).toFixed(2)}`
+                          `${t.minValue}–${t.maxValue !== null ? t.maxValue : "Above"} ${item.unitType || ""}: Rs.\u00A0${Number(t.rate).toFixed(2)}\u00A0${t.rateType === "unitRate" ? "/\u00A0" + (item.unitType || "") : "(slab)"}`
                       )
                       .join("\n")
                   : item.baseRate != null ? Number(item.baseRate).toFixed(2) : "0.00"}
