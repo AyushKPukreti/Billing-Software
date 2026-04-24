@@ -34,6 +34,29 @@ const PaymentManagement = () => {
     recordedBy: ""
   });
 
+  // Helper function for precise decimal arithmetic
+  const toPrecision = (num) => {
+    return Math.round(num * 100) / 100;
+  };
+
+  // Helper function to compare amounts with tolerance
+  const isAmountValidWithTolerance = (amount, maxAmount, tolerance = 0.009) => {
+    const roundedAmount = toPrecision(parseFloat(amount));
+    const roundedMax = toPrecision(maxAmount);
+    return roundedAmount <= roundedMax + tolerance;
+  };
+
+  // Get precise remaining balance
+  const getPreciseRemainingBalance = () => {
+    if (!invoice) return 0;
+    if (editingPayment) {
+      const amountWithoutCurrentPayment = toPrecision(invoice.amountPaid - editingPayment.amountPaid);
+      return toPrecision(invoice.totalAmount - amountWithoutCurrentPayment);
+    } else {
+      return toPrecision(invoice.totalAmount - invoice.amountPaid);
+    }
+  };
+
   useEffect(() => {
     fetchInvoiceAndPayments();
   }, [id]);
@@ -56,44 +79,35 @@ const PaymentManagement = () => {
     }
   };
 
-  // Frontend validation function for ADD payment
-  const validateAddPaymentAmount = (amount) => {
-    if (!invoice) return false;
-    const remainingBalance = invoice.totalAmount - invoice.amountPaid;
-    return parseFloat(amount) <= remainingBalance;
-  };
-
-  // Frontend validation function for EDIT payment
-  const validateEditPaymentAmount = (amount) => {
-    if (!invoice || !editingPayment) return false;
-    // Subtract the original payment amount first, then add the new amount
-    const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
-    const remainingBalance = invoice.totalAmount - amountWithoutCurrentPayment;
-    return parseFloat(amount) <= remainingBalance;
-  };
-
   const handleAddPayment = async (e) => {
     e.preventDefault();
     
-    // Convert amount to number before sending
-    const paymentPayload = {
-      ...paymentData,
-      amount: parseFloat(paymentData.amount) // Convert string to number
-    };
+    const amount = parseFloat(paymentData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
 
-    console.log("Sending payment data:", paymentPayload);
+    const remainingBalance = getPreciseRemainingBalance();
     
-    // Frontend validation
-    if (!validateAddPaymentAmount(paymentData.amount)) {
-      const remainingBalance = invoice.totalAmount - invoice.amountPaid;
+    // Use tolerance for floating-point precision
+    if (!isAmountValidWithTolerance(amount, remainingBalance)) {
       toast.error(`Payment would exceed total amount. Maximum allowed: Rs. ${remainingBalance.toFixed(2)}`);
       return;
     }
 
+    // Ensure amount doesn't exceed remaining balance by more than tolerance
+    const finalAmount = amount > remainingBalance ? remainingBalance : amount;
+    
+    const paymentPayload = {
+      ...paymentData,
+      amount: toPrecision(finalAmount)
+    };
+
     try {
       await axios.post(
         `${import.meta.env.VITE_BASE_URL}/invoices/${id}/payments`,
-        paymentPayload // Send the converted payload
+        paymentPayload
       );
       
       toast.success("Payment added successfully");
@@ -115,24 +129,34 @@ const PaymentManagement = () => {
   const handleUpdatePayment = async (e) => {
     e.preventDefault();
 
-    // Convert amount to number before sending
-    const paymentPayload = {
-      ...paymentData,
-      amount: parseFloat(paymentData.amount) // Convert string to number
-    };
+    const amount = parseFloat(paymentData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
 
-    // Frontend validation for edit - use different calculation
-    if (!validateEditPaymentAmount(paymentData.amount)) {
-      const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
-      const remainingBalance = invoice.totalAmount - amountWithoutCurrentPayment;
+    // Calculate remaining balance considering the current payment being edited
+    const amountWithoutCurrentPayment = toPrecision(invoice.amountPaid - editingPayment.amountPaid);
+    const remainingBalance = toPrecision(invoice.totalAmount - amountWithoutCurrentPayment);
+    
+    // Use tolerance for floating-point precision
+    if (!isAmountValidWithTolerance(amount, remainingBalance)) {
       toast.error(`Payment would exceed total amount. Maximum allowed: Rs. ${remainingBalance.toFixed(2)}`);
       return;
     }
 
+    // Ensure amount doesn't exceed remaining balance by more than tolerance
+    const finalAmount = amount > remainingBalance ? remainingBalance : amount;
+
+    const paymentPayload = {
+      ...paymentData,
+      amount: toPrecision(finalAmount)
+    };
+
     try {
       await axios.patch(
         `${import.meta.env.VITE_BASE_URL}/invoices/${id}/payments/${editingPayment._id}`,
-        paymentPayload 
+        paymentPayload
       );
       
       toast.success("Payment updated successfully");
@@ -189,7 +213,25 @@ const PaymentManagement = () => {
     });
   };
 
-  // Prevent wheel event on number input to stop accidental value changes
+  // Handle amount change with proper formatting
+  const handleAmountChange = (e) => {
+    let value = e.target.value;
+    
+    // Allow empty string
+    if (value === "") {
+      setPaymentData({ ...paymentData, amount: value });
+      return;
+    }
+    
+    // Allow only numbers and decimal point
+    if (!/^(\d*\.?\d{0,2})?$/.test(value)) {
+      return;
+    }
+    
+    setPaymentData({ ...paymentData, amount: value });
+  };
+
+  // Prevent wheel event on number input
   const handleWheel = (e) => {
     e.target.blur();
   };
@@ -213,18 +255,10 @@ const PaymentManagement = () => {
     );
   }
 
-  // Calculate remaining balance for display - DIFFERENT FOR ADD VS EDIT
-  const getRemainingBalance = () => {
-    if (editingPayment) {
-      const amountWithoutCurrentPayment = invoice.amountPaid - editingPayment.amountPaid;
-      return invoice.totalAmount - amountWithoutCurrentPayment;
-    } else {
-      return invoice.totalAmount - invoice.amountPaid;
-    }
-  };
-
-  const remainingBalance = getRemainingBalance();
-  const isAmountValid = paymentData.amount && parseFloat(paymentData.amount) <= remainingBalance;
+  const remainingBalance = getPreciseRemainingBalance();
+  const enteredAmount = paymentData.amount ? parseFloat(paymentData.amount) : 0;
+  const isAmountValid = paymentData.amount && !isNaN(enteredAmount) && 
+    isAmountValidWithTolerance(enteredAmount, remainingBalance);
 
   return (
     <div style={{ padding: "20px" }}>
@@ -256,10 +290,10 @@ const PaymentManagement = () => {
         {/* Invoice Summary */}
         <div style={{ 
           display: "grid", 
-          gridTemplateColumns: "1fr", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
           gap: "16px",
           marginBottom: "24px"
-        }} className="md:grid-cols-4">
+        }}>
           <div style={{ 
             backgroundColor: "white", 
             padding: "16px", 
@@ -268,7 +302,7 @@ const PaymentManagement = () => {
           }}>
             <p className="text-sm text-gray-600">Total Amount</p>
             <p className="text-lg font-semibold text-gray-900">
-              Rs. {invoice.totalAmount?.toFixed(2)}
+              Rs. {toPrecision(invoice.totalAmount).toFixed(2)}
             </p>
           </div>
           <div style={{ 
@@ -279,7 +313,7 @@ const PaymentManagement = () => {
           }}>
             <p className="text-sm text-gray-600">Amount Paid</p>
             <p className="text-lg font-semibold text-green-600">
-              Rs. {invoice.amountPaid?.toFixed(2)}
+              Rs. {toPrecision(invoice.amountPaid).toFixed(2)}
             </p>
           </div>
           <div style={{ 
@@ -290,7 +324,7 @@ const PaymentManagement = () => {
           }}>
             <p className="text-sm text-gray-600">Amount Due</p>
             <p className="text-lg font-semibold text-orange-600">
-              Rs. {invoice.amountDue?.toFixed(2)}
+              Rs. {toPrecision(invoice.amountDue).toFixed(2)}
             </p>
           </div>
           <div style={{ 
@@ -315,7 +349,7 @@ const PaymentManagement = () => {
       <div style={{ marginBottom: "24px" }}>
         <button
           onClick={() => setShowAddPayment(true)}
-          disabled={invoice.amountPaid >= invoice.totalAmount}
+          disabled={invoice.amountPaid >= invoice.totalAmount - 0.009}
           style={{ 
             display: "flex", 
             alignItems: "center", 
@@ -363,12 +397,12 @@ const PaymentManagement = () => {
                   </span>
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   required
                   value={paymentData.amount}
-                  onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                  onWheel={handleWheel} // Prevent scroll wheel from changing value
+                  onChange={handleAmountChange}
+                  onWheel={handleWheel}
                   style={{ 
                     width: "100%", 
                     padding: "8px 12px", 
@@ -379,7 +413,7 @@ const PaymentManagement = () => {
                     }`,
                     borderRadius: "8px"
                   }}
-                  placeholder="Enter amount"
+                  placeholder="Enter amount (e.g., 1000.50)"
                 />
                 {paymentData.amount && !isAmountValid && (
                   <p className="text-red-600 text-sm mt-1">
@@ -524,7 +558,7 @@ const PaymentManagement = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full" style={{ gap: "12px" }}>
                   <div className="flex flex-col items-start w-full sm:w-auto" style={{ gap: "4px" }}>
                     <p className="font-semibold text-gray-900 text-lg sm:text-base">
-                      Rs. {payment.amountPaid?.toFixed(2)}
+                      Rs. {toPrecision(payment.amountPaid).toFixed(2)}
                     </p>
                     <div className="flex flex-wrap items-center text-sm text-gray-600" style={{ gap: "4px 8px" }}>
                       <div className="flex items-center" style={{ gap: "6px" }}>
@@ -549,7 +583,7 @@ const PaymentManagement = () => {
 
                   <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto" style={{ gap: "12px" }}>
                     <p className="text-sm font-medium text-gray-800 sm:text-gray-600">
-                      Balance Due: Rs. {payment.balanceDueAfter?.toFixed(2)}
+                      Balance Due: Rs. {toPrecision(payment.balanceDueAfter).toFixed(2)}
                     </p>
                     <div className="flex gap-1 flex-shrink-0">
                       <button

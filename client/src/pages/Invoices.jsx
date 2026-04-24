@@ -12,6 +12,7 @@ import {
   IndianRupee,
   Bell,
   X,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
@@ -78,6 +79,7 @@ const Invoices = () => {
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [openActionId, setOpenActionId] = useState(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
   // Email Modal State
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -365,6 +367,7 @@ const Invoices = () => {
 
   // Update invoice status
   const handleStatusChange = async (invoiceId, newStatus) => {
+    setStatusUpdatingId(invoiceId);
     try {
       await axios.patch(
         `${import.meta.env.VITE_BASE_URL}/invoices/update-invoice/${invoiceId}`,
@@ -374,6 +377,8 @@ const Invoices = () => {
       fetchInvoices();
     } catch (error) {
       toast.error("Failed to update status");
+    } finally {
+      setStatusUpdatingId(null);
     }
   };
 
@@ -572,6 +577,8 @@ const Invoices = () => {
       width: '14%',
       render: (row) => {
         const colors = statusColors[row.status] || statusColors.draft;
+        const isUpdating = statusUpdatingId === row._id;
+        
         return (
           <div style={{ position: 'relative' }}>
             <button
@@ -581,9 +588,11 @@ const Invoices = () => {
                   openDropdownId === row._id ? null : row._id
                 );
               }}
+              disabled={isUpdating}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '6px',
                 padding: '5px 12px',
                 borderRadius: '999px',
@@ -593,34 +602,45 @@ const Invoices = () => {
                 fontSize: '12px',
                 fontWeight: 600,
                 fontFamily: 'inherit',
-                cursor: 'pointer',
+                cursor: isUpdating ? 'default' : 'pointer',
                 transition: 'all 180ms ease',
                 letterSpacing: '0.01em',
                 minWidth: '80px',
-                justifyContent: 'center',
+                opacity: isUpdating ? 0.8 : 1,
               }}
               onMouseEnter={(e) => {
+                if (isUpdating) return;
                 e.currentTarget.style.filter = 'brightness(0.96)';
                 e.currentTarget.style.transform = 'scale(1.02)';
               }}
               onMouseLeave={(e) => {
+                if (isUpdating) return;
                 e.currentTarget.style.filter = 'none';
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <span
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: colors.dot,
-                  flexShrink: 0,
-                }}
-              />
-              {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+              {isUpdating ? (
+                <>
+                  <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: colors.dot,
+                      flexShrink: 0,
+                    }}
+                  />
+                  {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                </>
+              )}
             </button>
 
-            {openDropdownId === row._id && (
+            {openDropdownId === row._id && !isUpdating && (
               <div style={statusDropdownStyle}>
                 {statusOptions.map(
                   (status) =>
@@ -1091,6 +1111,13 @@ const Invoices = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
